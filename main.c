@@ -8,10 +8,17 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
+#define USE_ATOMBIOS_RELATED_STUFF
 #define MMAP_SIZE (1024*1024)
 
 #include "atombios_types.h"
 #include "atombios.h"
+
+
+#ifdef USE_ATOMBIOS_RELATED_STUFF
+extern int (*data_dumpers[]) (uint8_t *data, int indent);
+#endif
+
 
 typedef struct {
     uint8_t                            *base;
@@ -193,6 +200,7 @@ const char *index_data_table[] = {
     "IntegratedSystemInfo", "ASIC_ProfilingInfo", "VoltageObjectInfo",
     "PowerSourceInfo"
 } ;
+
 
 const char *index_ati_port[] = {
     "INDIRECT_IO_MM", "INDIRECT_IO_PLL", "INDIRECT_IO_MC", "INDIRECT_IO_PCIE"
@@ -467,6 +475,10 @@ void do_list (bios_tables_t *tabs)
 	    fprintf (stdout, "    %04x:   -             ", i);
 	if ( (ind = get_index (INDEX_DATA_TABLE, i)) )
 	    fprintf (stdout, "  (%s)", ind);
+#ifdef USE_ATOMBIOS_RELATED_STUFF
+	if (i >= 0 && data_dumpers[i])	/* TODO: no size check */
+	    fprintf (stdout, "    (struct size %04x)", data_dumpers[i](NULL, 0));
+#endif
 	putc ('\n', stdout);
     }
     putc ('\n', stdout);
@@ -535,6 +547,17 @@ void do_dump (uint8_t *data, int start, int end)
     }
     putc ('\n', stdout);
 }
+
+#ifdef USE_ATOMBIOS_RELATED_STUFF
+void do_data (uint8_t *data, int off, int nr)
+{
+    int len;
+    if (nr >= 0 && data_dumpers[nr]) {	/* TODO: no size check */
+	len = data_dumpers[nr] (data+off, 1);
+	fprintf (stdout, "\nTotal data structure size:  %04x\n\n", len);
+    }
+}
+#endif
 
 void do_diss (uint8_t *data, int off, int size)
 {
@@ -643,6 +666,9 @@ int main (int argc, char *argv[])
 	    do_dump (data + off, 0, 4);
 	    fputs ("Data:\n", stdout);
 	    do_dump (data + off, 4, len);
+#ifdef USE_ATOMBIOS_RELATED_STUFF
+	    do_data (data + off, 0, start);
+#endif
 	}
 	break;
     case 'c':

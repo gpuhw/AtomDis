@@ -1,31 +1,32 @@
 CFLAGS = -O0 -g3 -Wall
 
-all: atomdis structsizedumper
+all: atomdis
 
-atomdis: main.o
-	$(CC) -o atomdis $<
-structsizedumper: structsizedumper_gen.o
-	$(CC) -o structsizedumper $<
+atomdis: main.o datastructs.o
+	$(CC) -o atomdis $^
 
 clean: _always_
-	rm -f *.o
-	rm -f atombios.h structsizedumper_gen.c
+	-rm -f *.o
+	-rm -f atombios.h datastructs_gen.c
 
 distclean: clean
-	rm atomdis structsizedumper
+	-rm -f *~
+	-rm atomdis structsizedumper
 
 
 atombios.h:
 	test -r ../ATI/atombios.h
 	ln -s ../ATI/atombios.h .
 
-structsizedumper_gen.c: atombios.h structsizedumper_factory.pl
-	perl ./structsizedumper_factory.pl < atombios.h > structsizedumper_gen.c
+datastructs_gen.c: atombios.h datastructs_factory.pl
+	cpp atombios.h | perl ./datastructs_factory.pl > datastructs_gen.c
 
 _always_:
 	@true
 
 
 main.o: atombios.h
+datastructs.o: CFLAGS += -Wno-unused
+datastructs.o: atombios.h datastructs_gen.c
 
 #EOF
