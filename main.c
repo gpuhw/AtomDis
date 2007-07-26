@@ -12,10 +12,13 @@
 #define MMAP_SIZE (1024*1024)
 
 #include "atombios_types.h"
+#include "atombios_consts.h"
+//include "atombios_tables.h"
 #include "atombios.h"
 
 
 #ifdef USE_ATOMBIOS_RELATED_STUFF
+//#include "atombios.h"
 extern int (*data_dumpers[]) (uint8_t *data, int indent);
 #endif
 
@@ -29,7 +32,7 @@ typedef struct {
 
 
 enum IndexName {
-    INDEX_NONE = 0, INDEX_COMMAND_TABLE, INDEX_DATA_TABLE, INDEX_ATI_PORT
+    INDEX_NONE = 0, INDEX_COMMAND_TABLE, INDEX_DATA_TABLE, INDEX_ATI_PORT, INDEX_WORK_REG
 } ;
 
 
@@ -206,6 +209,14 @@ const char *index_ati_port[] = {
     "INDIRECT_IO_MM", "INDIRECT_IO_PLL", "INDIRECT_IO_MC", "INDIRECT_IO_PCIE"
 } ;
 
+const char *index_work_reg[] = {
+    [WS_QUOTIENT]   = "WS_QUOT/LOW32", [WS_REMINDER]   = "WS_REMIND/HI32",
+    [WS_DATAPTR]    = "WS_DATAPTR",    [WS_SHIFT]      = "WS_SHIFT",
+    [WS_OR_MASK]    = "WS_OR_MASK",    [WS_AND_MASK]   = "WS_AND_MASK",
+    [WS_FB_WINDOW]  = "WS_FB_WIN",     [WS_ATTRIBUTES] = "WS_ATTR"
+} ;
+
+
 struct index_table_s {
     const char  *name;
     const char **tab;
@@ -216,7 +227,8 @@ struct index_table_s {
 const struct index_table_s index_tables[] = {
     [INDEX_COMMAND_TABLE] = TABENTRY (command_table),
     [INDEX_DATA_TABLE] =    TABENTRY (data_table),
-    [INDEX_ATI_PORT] =      TABENTRY (ati_port)
+    [INDEX_ATI_PORT] =      TABENTRY (ati_port),
+    [INDEX_WORK_REG] =      TABENTRY (work_reg)
 } ;
 
 
@@ -231,9 +243,9 @@ bios_tables_t *get_pointers (uint8_t *data)
 	exit (1);
     }
     tabs.MasterCommandTables = & ((ATOM_MASTER_COMMAND_TABLE *)
-				  (data + tabs.AtomRomHeader->usMasterCommandTableOffset))->ListOfCommandTables;
+				  (data + tabs.AtomRomHeader->usMasterCommandTableOffset)) ->ListOfCommandTables;
     tabs.MasterDataTables    = & ((ATOM_MASTER_DATA_TABLE *)
-				  (data + tabs.AtomRomHeader->usMasterDataTableOffset))->ListOfDataTables;
+				  (data + tabs.AtomRomHeader->usMasterDataTableOffset)) ->ListOfDataTables;
     return &tabs;
 }
 
@@ -266,7 +278,9 @@ int sub_dest (uint8_t *d, char *out, int type, int align, int size, int index) {
 	val = *d;
 	r   = 1;
     }
-    if (r)
+    if (type == D_WS && (ind = get_index (INDEX_WORK_REG, val)) )
+	out += sprintf (out, "%s", ind);
+    else if (r)
 	out += sprintf (out, addrtypes [type], val);
     switch (size) {
     case 1:
@@ -310,6 +324,9 @@ int sub_src (uint8_t *d, char *out, int type, int align, int size, int index) {
     }
     if (type == D_IM) {
 	out += sprintf (out, addrtypes_im [size], val);
+    } else if (type == D_WS && (ind = get_index (INDEX_WORK_REG, val)) ) {
+	out += sprintf (out, "%s", ind);
+	out += sprintf (out, " [%s]", align_source[align]);
     } else {
 	out += sprintf (out, addrtypes [type], val);
 	out += sprintf (out, " [%s]", align_source[align]);

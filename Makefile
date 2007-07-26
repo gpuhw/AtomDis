@@ -11,7 +11,7 @@ clean: _always_
 
 distclean: clean
 	-rm -f *~
-	-rm atomdis structsizedumper
+	-rm -f atomdis
 
 
 atombios.h:
