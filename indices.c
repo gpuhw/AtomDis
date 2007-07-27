@@ -9,7 +9,11 @@
  * License: to be determined
  */
 
+#define _GNU_SOURCE
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <strings.h>
 
 #include "indices.h"
 #include "atombios_consts.h"
@@ -75,19 +79,90 @@ const char *index_work_reg[] = {
 
 #define TABENTRY(x) { #x, (index_ ## x), sizeof (index_ ## x) / sizeof (const char **) }
 
-const index_table_t index_tables[] = {
-    [INDEX_COMMAND_TABLE] = TABENTRY (command_table),
-    [INDEX_DATA_TABLE] =    TABENTRY (data_table),
-    [INDEX_ATI_PORT] =      TABENTRY (ati_port),
-    [INDEX_WORK_REG] =      TABENTRY (work_reg)
+index_table_t index_tables[INDEXTABLE_SIZEOF] = {
+    { NULL, NULL, 0 }, TABENTRY (command_table), TABENTRY (data_table),
+    TABENTRY (ati_port), TABENTRY (work_reg),
+    { "REG_MM",   NULL, 0 }, { "REG_PLL",  NULL, 0 }, { "REG_MC",   NULL, 0 },
+    { "REG_PCIE", NULL, 0 }, { "REG_PCICONFIG", NULL, 0 },
+    { "REG_SYSTEMIO", NULL, 0 }
 } ;
 
 
-const char *get_index (int type, int val) {
+const char *get_index (int type, int val)
+{
     if (type < 0 || val < 0 ||
 	type >= sizeof (index_tables) / sizeof (const struct index_table_s))
 	return NULL;
     if (! index_tables[type].tab || val >= index_tables[type].len)
 	return NULL;
     return index_tables[type].tab[val];
+}
+
+
+void index_load_registers (const char *file)
+{
+    FILE *f;
+    char  buf[512], kind[32], offset[32];
+    char *c, *d, *e, *name = NULL, *namefree = NULL;
+    int   len, id, nr;
+
+    if (! (f = fopen (file, "r")) ) {
+	perror (file);
+	exit (1);
+    }
+    while (fgets (buf, 512, f)) {
+	if ( (c = strstr (buf, "<register ")) ) {
+	    if ( (d = strstr (c, " name=\"")) )
+		if ( (e = strchr (d+7, '"')) ) {
+		    free (namefree);
+		    name = namefree = strndup (d+7, e-d-7);
+		}
+	}
+	if ( (c = strstr (buf, "<addr ")) ) {
+	    kind[0] = offset[0] = 0;
+	    if ( (d = strstr (c, " kind=\"")) )
+		if ( (e = strchr (d+7, '"')) ) {
+		    strncpy (kind, d+7, e-d-7 > 31 ? 31 : e-d-7);
+		    kind[ e-d-7 > 31 ? 31 : e-d-7] = 0;
+		}
+	    if ( (d = strstr (c, " offset=\"")) )
+		if ( (e = strchr (d+9, '"')) ) {
+		    strncpy (offset, d+9, e-d-9 > 31 ? 31 : e-d-9);
+		    offset[ e-d-9 > 31 ? 31 : e-d-9] = 0;
+		}
+	    if (! kind[0] || ! offset[0])
+		continue;
+	    if (strcasestr (kind, "MMReg"))
+		id = INDEX_REG_MM;
+	    else if (strcasestr (kind, "MCIND"))
+		id = INDEX_REG_MC;
+	    else if (strcasestr (kind, "PCIEIND"))
+		id = INDEX_REG_PCIE;
+	    else if (strcasestr (kind, "pciConfig"))
+		id = INDEX_REG_PCICONFIG;
+	    else
+		continue;
+	    nr = strtol (offset, NULL, 0);
+	    if (index_tables[id].len <= nr || ! index_tables[id].tab) {
+		len = (nr + 0x1f) & -0x20;
+		if (len <= 0)
+		    len = 0x20;
+		index_tables[id].tab = realloc (index_tables[id].tab,
+						len * sizeof (const char *));
+		memset (index_tables[id].tab + index_tables[id].len,
+			0,
+			(len - index_tables[id].len) * sizeof (const char *));
+		index_tables[id].len = len;
+	    }
+	    if (index_tables[id].tab[nr]) {
+		fprintf (stderr, "Register %s already present: %s for offset %04x in table %s\n",
+			 name, index_tables[id].tab[nr], nr, index_tables[id].name);
+	    } else {
+		index_tables[id].tab[nr] = name;
+		namefree = NULL;
+	    }
+	}
+    }
+    free (namefree);
+    fclose (f);
 }

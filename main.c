@@ -61,6 +61,10 @@ typedef struct {
     int srcindex, destindex;
 } optab_t;
 
+
+static int last_reg_index  = INDEX_NONE;
+static int last_reg_offset = 0;
+
 int op_0x      (uint8_t *, char *);
 int op_1x8     (uint8_t *, char *);
 int op_1x16    (uint8_t *, char *);
@@ -70,6 +74,10 @@ int op_destsrc (uint8_t *, char *);
 int op_shift   (uint8_t *, char *);
 int op_switch  (uint8_t *, char *);
 int op_mask    (uint8_t *, char *);
+int op_setpt0  (uint8_t *, char *);
+int op_setpt1  (uint8_t *, char *);
+int op_setrb   (uint8_t *, char *);
+
 const optab_t optable[256] = {
     { NULL, NULL, D_null, 0, 0 },
     { op_destsrc, "MOVE", D_REG, 0, 0 }, { op_destsrc, "MOVE", D_PS, 0, 0 },
@@ -99,10 +107,10 @@ const optab_t optable[256] = {
     { op_destsrc, "SUB", D_REG, 0, 0 }, { op_destsrc, "SUB", D_PS, 0, 0 },
     { op_destsrc, "SUB", D_WS, 0, 0 },  { op_destsrc, "SUB", D_FB, 0, 0 },
     { op_destsrc, "SUB", D_PLL, 0, 0 }, { op_destsrc, "SUB", D_MC, 0, 0 },
-    { op_1x16,    "SET_ATI_PORT",      D_hex16, 0, INDEX_ATI_PORT },
-    { op_0x,      "SET_PCI_PORT",      D_null , 0, 0 },
-    { op_0x,      "SET_SystemIO_PORT", D_null , 0, 0 },
-    { op_1x16,    "SET_REG_BLOCK",     D_hex16, 0, 0 },
+    { op_setpt1,  "SET_ATI_PORT",      D_hex16, INDEX_REG_MM, INDEX_ATI_PORT },
+    { op_setpt0,  "SET_PCI_PORT",      D_null , INDEX_REG_PCICONFIG, 0 },
+    { op_setpt0,  "SET_SystemIO_PORT", D_null , INDEX_REG_SYSTEMIO, 0 },
+    { op_setrb,   "SET_REG_BLOCK",     D_hex16, 0, 0 },
     { op_src,     "SET_FB_BASE",       D_hex16, 0, 0 },
     { op_destsrc, "COMP", D_REG, 0, 0 }, { op_destsrc, "COMP", D_PS, 0, 0 },
     { op_destsrc, "COMP", D_WS, 0, 0 },  { op_destsrc, "COMP", D_FB, 0, 0 },
@@ -206,6 +214,8 @@ int sub_dest (uint8_t *d, char *out, int type, int align, int size, int index) {
     }
     if (type == D_WS && (ind = get_index (INDEX_WORK_REG, val)) )
 	out += sprintf (out, "%s", ind);
+    else if (type == D_REG && (ind = get_index (last_reg_index, val+last_reg_offset)) )
+	out += sprintf (out, "%04x=%s", val, ind);
     else if (r)
 	out += sprintf (out, addrtypes [type], val);
     switch (size) {
@@ -253,6 +263,8 @@ int sub_src (uint8_t *d, char *out, int type, int align, int size, int index) {
     } else if (type == D_WS && (ind = get_index (INDEX_WORK_REG, val)) ) {
 	out += sprintf (out, "%s", ind);
 	out += sprintf (out, " [%s]", align_source[align]);
+    } else if (type == D_REG && (ind = get_index (last_reg_index, val+last_reg_offset)) ) {
+	out += sprintf (out, "%04x=%s", val, ind);
     } else {
 	out += sprintf (out, addrtypes [type], val);
 	out += sprintf (out, " [%s]", align_source[align]);
@@ -372,6 +384,21 @@ int op_mask (uint8_t *d, char *out) {
     out += sprintf  (out, "  |  ");
     t   += sub_src  (t, out, attr & 0x07, (attr & 0x38) >> 3, size_align[(attr & 0x38)>>3], 0);
     return t - d;
+}
+int op_setpt0 (uint8_t *d, char *out) {
+    const optab_t *op = &optable[d[0]];
+    last_reg_index = op->srcindex;
+    return op_0x (d, out);
+}
+int op_setpt1 (uint8_t *d, char *out) {
+    const optab_t *op = &optable[d[0]];
+    last_reg_index = op->srcindex + *(uint16_t *) &d[1];
+    return op_1x16 (d, out);
+}
+int op_setrb (uint8_t *d, char *out) {
+    const optab_t *op = &optable[d[0]];
+    last_reg_offset = op->srcindex + *(uint16_t *) &d[1];
+    return op_1x16 (d, out);
 }
 
 
@@ -538,7 +565,8 @@ void do_test (uint8_t *data)
     for (i = 0; i < INDEXTABLE_SIZEOF; i++) {
 	fprintf (stdout, "\nindex_table %s len %02x\n ", index_tables[i].name, index_tables[i].len);
 	for (j = 0; j < index_tables[i].len; j++)
-	    fprintf (stdout, " %02x=%s", j, index_tables[i].tab[j]);
+	    if (index_tables[i].tab[j])
+		fprintf (stdout, " %02x=%s", j, index_tables[i].tab[j]);
 	putc ('\n', stdout);
     }
     putc ('\n', stdout);
@@ -549,7 +577,7 @@ void usage (char *argv[])
 {
     fprintf (stderr, "Usage:  %s [<opts>] <file> <cmd> [<cmd>...]\n"
 	     "Opts:   -o <vga_offset>      Specify offset of VGA bios in <file>\n"
-//	     "        -r <registers.xml>   Load registers specification file\n"
+	     "        -r <registers.xml>   Load registers specification file\n"
 	     "Cmds:   i                    Dump info on AtomBIOS\n"
 	     "        l                    Info + Table list\n"
 	     "        x <start> <len>      Hexdump\n"
@@ -574,19 +602,19 @@ int main (int argc, char *argv[])
     int            off, start, len;
 
     opterr = 0;
-    while ( (c = getopt (argc-1, argv+1, "o:r:")) != -1)
+    while ( (c = getopt (argc, argv, "o:r:")) != -1)
 	switch (c) {
 	case 'o':
 	    opt_off = strtol (optarg, NULL, 16);
 	    break;
 	case 'r':
-//	    load_registers (optarg);
+	    index_load_registers (optarg);
 	    break;
 	default:
 	    usage (argv);
 	}
 
-    if (! argv[optind])
+    if (! argv[optind] || argv[optind][0] == '-')
 	usage (argv);
 
     if ( (fdmem = open (argv[optind], O_RDONLY)) == -1) {
@@ -601,6 +629,8 @@ int main (int argc, char *argv[])
     }
 
     for (arg = &argv[optind+1]; *arg && **arg; arg++) {
+	last_reg_index  = INDEX_NONE;
+	last_reg_offset = 0;
 	if (arg[0][1])
 	    usage (argv);
 	switch (arg[0][0]) {
