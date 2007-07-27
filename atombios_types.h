@@ -1,3 +1,13 @@
+/*
+ * Copyright 2007 Matthias Hopf <mhopf@suse.de>
+ *
+ * AtomBIOS disassembler + data structure dumper
+ *
+ * Types needed for atombios.h.
+ *
+ * License: to be determined
+ */
+
 #include <stdint.h>
 
 typedef uint8_t		BOOLEAN;

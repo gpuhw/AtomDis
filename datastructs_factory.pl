@@ -1,5 +1,17 @@
 #!/usr/bin/perl
 
+#
+# Copyright 2007 Matthias Hopf <mhopf@suse.de>
+#
+# AtomBIOS disassembler + data structure dumper
+#
+# datastructs_factory.pl:
+# Datastruct dumper generator (using atombios.h).
+#
+# License: to be determined
+#
+
+
 while (<>) {
     $l++;
     if (/^\s*typedef\s+(struct|union)\s+_(\w+)/) {

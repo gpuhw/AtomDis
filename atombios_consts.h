@@ -1,3 +1,14 @@
+/*
+ * Copyright 2007 Matthias Hopf <mhopf@suse.de>
+ *
+ * AtomBIOS disassembler + data structure dumper
+ *
+ * atombios_consts.h:
+ * Constants not defined in atombios.h.
+ *
+ * License: to be determined
+ */
+
 #ifndef ATOMBIOS_CONSTS_H_
 #define ATOMBIOS_CONSTS_H_
 

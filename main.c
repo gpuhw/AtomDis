@@ -1,4 +1,16 @@
+/*
+ * Copyright 2007 Matthias Hopf <mhopf@suse.de>
+ *
+ * AtomBIOS disassembler + data structure dumper
+ *
+ * main.c:
+ * Disassembler + frontend.
+ *
+ * License: to be determined
+ */
+
 // TODO: not endian safe!
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -8,14 +20,12 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
-#define USE_ATOMBIOS_RELATED_STUFF
-#define MMAP_SIZE (1024*1024)
-
+#include "datastructs.h"
 #include "atombios_types.h"
 #include "atombios_consts.h"
+
 //include "atombios_tables.h"
 #include "atombios.h"
-
 
 #ifdef USE_ATOMBIOS_RELATED_STUFF
 //#include "atombios.h"
@@ -23,11 +33,15 @@ extern int (*data_dumpers[]) (uint8_t *data, int indent);
 #endif
 
 
+#define USE_ATOMBIOS_RELATED_STUFF
+#define MMAP_SIZE (1024*1024)
+
+
 typedef struct {
-    uint8_t                            *base;
-    ATOM_ROM_HEADER                    *AtomRomHeader;
-    ATOM_MASTER_LIST_OF_COMMAND_TABLES *MasterCommandTables;
-    ATOM_MASTER_LIST_OF_DATA_TABLES    *MasterDataTables;
+    uint8_t          *base;
+    ATOM_ROM_HEADER  *AtomRomHeader;
+    uint16_t         *MasterCommandTables;
+    uint16_t         *MasterDataTables;
 } bios_tables_t;
 
 
@@ -242,10 +256,15 @@ bios_tables_t *get_pointers (uint8_t *data)
 	fprintf (stderr, "No AtomBIOS\n");
 	exit (1);
     }
-    tabs.MasterCommandTables = & ((ATOM_MASTER_COMMAND_TABLE *)
-				  (data + tabs.AtomRomHeader->usMasterCommandTableOffset)) ->ListOfCommandTables;
-    tabs.MasterDataTables    = & ((ATOM_MASTER_DATA_TABLE *)
-				  (data + tabs.AtomRomHeader->usMasterDataTableOffset)) ->ListOfDataTables;
+    tabs.MasterCommandTables = (uint16_t *)
+	& ((ATOM_MASTER_COMMAND_TABLE *)
+	   (data + tabs.AtomRomHeader->usMasterCommandTableOffset))
+	->ListOfCommandTables;
+    tabs.MasterDataTables    = (uint16_t *)
+	& ((ATOM_MASTER_DATA_TABLE *)
+	   (data + tabs.AtomRomHeader->usMasterDataTableOffset))
+	->ListOfDataTables;
+    
     return &tabs;
 }
 
@@ -468,28 +487,27 @@ void do_list (bios_tables_t *tabs)
 {
     int i;
     const char *ind;
-    uint16_t   *tab;
 
     fputs ("Command Tables:\n", stdout);
-    tab = ((uint16_t *)tabs->MasterCommandTables);
-    for (i = 0; i < sizeof (*tabs->MasterCommandTables) / sizeof (*tab); i++) {
-	if (tab[i])
-	    fprintf (stdout, "    %04x:   %04x  Len %04x",
-		     i, tab[i], * (uint16_t *) (tabs->base + tab[i]));
+    for (i = 0; i < sizeof (ATOM_MASTER_LIST_OF_COMMAND_TABLES) / sizeof (uint16_t); i++) {
+	if (tabs->MasterCommandTables[i])
+	    fprintf (stdout, "  %04x:   %04x  Len %04x",
+		     i, tabs->MasterCommandTables[i],
+		     * (uint16_t *) (tabs->base + tabs->MasterCommandTables[i]));
 	else
-	    fprintf (stdout, "    %04x:   -             ", i);
+	    fprintf (stdout, "  %04x:   -             ", i);
 	if ( (ind = get_index (INDEX_COMMAND_TABLE, i)) )
 	    fprintf (stdout, "  (%s)", ind);
 	putc ('\n', stdout);
     }
     fprintf (stdout, "\nData Tables:\n");
-    tab = ((uint16_t *)tabs->MasterDataTables);
-    for (i = 0; i < sizeof (*tabs->MasterDataTables) / sizeof (*tab); i++) {
-	if (tab[i])
-	    fprintf (stdout, "    %04x:   %04x  Len %04x",
-		     i, tab[i], * (uint16_t *) (tabs->base + tab[i]));
+    for (i = 0; i < sizeof (ATOM_MASTER_LIST_OF_DATA_TABLES) / sizeof (uint16_t); i++) {
+	if (tabs->MasterDataTables[i])
+	    fprintf (stdout, "  %04x:   %04x  Len %04x",
+		     i, tabs->MasterDataTables[i],
+		     * (uint16_t *) (tabs->base + tabs->MasterDataTables[i]));
 	else
-	    fprintf (stdout, "    %04x:   -             ", i);
+	    fprintf (stdout, "  %04x:   -             ", i);
 	if ( (ind = get_index (INDEX_DATA_TABLE, i)) )
 	    fprintf (stdout, "  (%s)", ind);
 #ifdef USE_ATOMBIOS_RELATED_STUFF
@@ -515,18 +533,18 @@ int do_tableinfo (uint8_t *data, int off, int type, int nr)
     
     if (off)
 	fprintf (stdout,
-		 "    Size         %04x\n"
-		 "    Format Rev.  %02x\n"
-		 "    Param Rev.   %02x\n"
-		 "    Content Rev. %02x\n",
+		 "  Size         %04x\n"
+		 "  Format Rev.  %02x\n"
+		 "  Param Rev.   %02x\n"
+		 "  Content Rev. %02x\n",
 		 size, frev & 0x0f, frev >> 4, crev);
 
     if (type == INDEX_COMMAND_TABLE) {
 	int attr = * (uint16_t *) (data+off+4);
 	fprintf (stdout,
-		 "    Attributes:  Work space size        %02x longs\n"
-		 "                 Parameter space size   %02x longs\n"
-		 "                 Table update indicator %x\n",
+		 "  Attributes:  Work space size        %02x longs\n"
+		 "               Parameter space size   %02x longs\n"
+		 "               Table update indicator %x\n",
 		 (attr & 0xff) >> 2, (attr & 0x7f00) >> (8+2), attr >> 15);
     }
     putc ('\n', stdout);
@@ -539,7 +557,7 @@ void do_dump (uint8_t *data, int start, int end)
     int i, j;
 
     for (i = start & -16; i < end; i += 16) {
-	fprintf (stdout, "%08x: ", i);
+	fprintf (stdout, "  %08x: ", i);
 	for (j = i; j < i+16; j++) {
 	    if (j >= start && j < end)
 		fprintf (stdout, "%02x", data[j]);
@@ -571,7 +589,7 @@ void do_data (uint8_t *data, int off, int nr)
     int len;
     if (nr >= 0 && data_dumpers[nr]) {	/* TODO: no size check */
 	len = data_dumpers[nr] (data+off, 1);
-	fprintf (stdout, "\nTotal data structure size:  %04x\n\n", len);
+	fprintf (stdout, "\n  Total data structure size:  %04x\n\n", len);
     }
 }
 #endif
@@ -624,14 +642,15 @@ void do_test (uint8_t *data)
 
 void usage (char *argv[])
 {
-    fprintf (stderr, "Usage:  %s <file> <vga_offset>\n"
-	     "        x <start> <len>            Hexdump\n"
-	     "        i                          Info\n"
-	     "        l                          Info + Table list\n"
-	     "        c <nr>                     Command table disasm\n"
-	     "        d <nr>                     Data table hexdump\n"
-	     "        C <start>                  Table disasm\n"
-	     "        T                          Test (internal)\n"
+    fprintf (stderr, "Usage:  %s [<opts>] <file> <cmd> [<cmd>...]\n"
+	     "Opts:   -o <vga_offset>      Specify offset of VGA bios in <file>\n"
+	     "Cmds:   i                    Dump info on AtomBIOS\n"
+	     "        l                    Info + Table list\n"
+	     "        x <start> <len>      Hexdump\n"
+	     "        d <nr>               Data table dump\n"
+	     "        c <nr>               Command table disasm\n"
+	     "        C <start>            Table disasm (debug)\n"
+	     "        T                    Test (debug)\n"
 	     "all values in hex\n",
 	     argv[0]);
     exit (1);
@@ -639,74 +658,96 @@ void usage (char *argv[])
 
 int main (int argc, char *argv[])
 {
-    int            off, start, len;
+    int            c;
+    int            opt_off = 0;
+    char         **arg;
     int            fdmem;
     uint8_t       *data;
     bios_tables_t *tabs;
     const char    *ind;
+    int            off, start, len;
 
-    if (argc < 4)
+    opterr = 0;
+    while ( (c = getopt (argc-1, argv+1, "o:")) != -1)
+	switch (c) {
+	case 'o':
+	    opt_off = strtol (optarg, NULL, 16);
+	    break;
+	default:
+	    usage (argv);
+	}
+
+    if (! argv[optind])
 	usage (argv);
-    if ( (fdmem = open (argv[1], O_RDONLY)) == -1) {
-	perror (argv[1]);
+
+    if ( (fdmem = open (argv[optind], O_RDONLY)) == -1) {
+	perror (argv[optind]);
 	return 1;
     }
-    off = strtol (argv[2], NULL, 16);
-    if ( (data = mmap (NULL, MMAP_SIZE, PROT_READ, MAP_PRIVATE, fdmem, off))
+    
+    if ( (data = mmap (NULL, MMAP_SIZE, PROT_READ, MAP_PRIVATE, fdmem, opt_off))
 	 == (void *) -1) {
 	perror ("mmap()");
 	return 1;
     }
 
-    switch (argv[3][0]) {
-    case 'x':
-	start = strtol (argv[4], NULL, 16);
-	len   = strtol (argv[5], NULL, 16);
-	do_dump (data, start, start+len);
-	break;
-    case 'i':
-	tabs = get_pointers (data);
-	do_info (tabs);
-	break;
-    case 'l':
-	tabs = get_pointers (data);
-	do_info (tabs);
-	do_list (tabs);
-	break;
-    case 'd':
-	start = strtol (argv[4], NULL, 16);
-	tabs  = get_pointers (data);
-	off   = * (((uint16_t *) tabs->MasterDataTables) + start);
-	len   = do_tableinfo (data, off, INDEX_DATA_TABLE, start);
-	if (off) {
-	    fputs ("Header:\n", stdout);
-	    do_dump (data + off, 0, 4);
-	    fputs ("Data:\n", stdout);
-	    do_dump (data + off, 4, len);
+    for (arg = &argv[optind+1]; *arg && **arg; arg++) {
+	if (arg[0][1])
+	    usage (argv);
+	switch (arg[0][0]) {
+	case 'i':
+	    tabs = get_pointers (data);
+	    do_info (tabs);
+	    break;
+	case 'l':
+	    tabs = get_pointers (data);
+	    do_info (tabs);
+	    do_list (tabs);
+	    break;
+	case 'x':
+	    start = strtol (arg[1], NULL, 16);
+	    len   = strtol (arg[2], NULL, 16);
+	    arg  += 2;
+	    do_dump (data, start, start+len);
+	    break;
+	case 'd':
+	    start = strtol (arg[1], NULL, 16);
+	    arg++;
+	    tabs  = get_pointers (data);
+	    off   = tabs->MasterDataTables [start];
+	    len   = do_tableinfo (data, off, INDEX_DATA_TABLE, start);
+	    if (off) {
+//		fputs ("Header:\n", stdout);
+//		do_dump (data + off, 0, 4);
+//		fputs ("Data:\n", stdout);
+		do_dump (data + off, 4, len);
 #ifdef USE_ATOMBIOS_RELATED_STUFF
-	    do_data (data + off, 0, start);
+		do_data (data + off, 0, start);
 #endif
-	}
-	break;
-    case 'c':
-	start = strtol (argv[4], NULL, 16);
-	tabs  = get_pointers (data);
-	off   = * (((uint16_t *) tabs->MasterCommandTables) + start);
-	ind   = get_index (INDEX_COMMAND_TABLE, start);
-	len   = do_tableinfo (data, off, INDEX_COMMAND_TABLE, start);
-	if (off)
+	    }
+	    break;
+	case 'c':
+	    start = strtol (arg[1], NULL, 16);
+	    arg++;
+	    tabs  = get_pointers (data);
+	    off   = tabs->MasterCommandTables [start];
+	    ind   = get_index (INDEX_COMMAND_TABLE, start);
+	    len   = do_tableinfo (data, off, INDEX_COMMAND_TABLE, start);
+	    if (off)
+		do_diss (data + off, 6, len);
+	    break;
+	case 'C':
+	    off   = strtol (arg[1], NULL, 16);
+	    arg++;
+	    len   = do_tableinfo (data, off, INDEX_COMMAND_TABLE, -1);
 	    do_diss (data + off, 6, len);
-	break;
-    case 'C':
-	off   = strtol (argv[4], NULL, 16);
-	len   = do_tableinfo (data, off, INDEX_COMMAND_TABLE, -1);
-	do_diss (data + off, 6, len);
-	break;
-    case 'T':
-	do_test (data);
-	break;
-    default:
-	usage (argv);
+	    break;
+	case 'T':
+	    do_test (data);
+	    break;
+	default:
+	    usage (argv);
+	}
     }
 
     munmap (data, MMAP_SIZE);
