@@ -21,19 +21,14 @@
 #include <sys/mman.h>
 
 #include "datastructs.h"
+#include "indices.h"
 #include "atombios_types.h"
 #include "atombios_consts.h"
 
 //include "atombios_tables.h"
-#include "atombios.h"
-
-#ifdef USE_ATOMBIOS_RELATED_STUFF
-//#include "atombios.h"
-extern int (*data_dumpers[]) (uint8_t *data, int indent);
-#endif
+#include "atombios.h"			/* FIXME: make it possible without */
 
 
-#define USE_ATOMBIOS_RELATED_STUFF
 #define MMAP_SIZE (1024*1024)
 
 
@@ -43,11 +38,6 @@ typedef struct {
     uint16_t         *MasterCommandTables;
     uint16_t         *MasterDataTables;
 } bios_tables_t;
-
-
-enum IndexName {
-    INDEX_NONE = 0, INDEX_COMMAND_TABLE, INDEX_DATA_TABLE, INDEX_ATI_PORT, INDEX_WORK_REG
-} ;
 
 
 enum {
@@ -173,79 +163,6 @@ const char *align_long[] = { "XXXX", "////", "////", "////" };
 const int   size_align[] = { 4, 2, 2, 2, 1, 1, 1, 1 };
 
 
-const char *index_command_table[] = {
-    "ASIC_Init", "GetDisplaySurfaceSize", "ASIC_RegistersInit",
-    "VRAM_BlockVenderDetection", "SetClocksRatio", "MemoryControllerInit",
-    "EnableCRTCMemReq", "MemoryParamAdjust", "DVOEncoderControl",
-    "GPIOPinControl", "SetEngineClock", "SetMemoryClock",
-    "SetPixelClock", "DynamicClockGating", "ResetMemoryDLL",
-    "ResetMemoryDevice", "MemoryPLLInit", "AdjustDisplayPll",
-    "AdjustMemoryController", "EnableASIC_StaticPwrMgt", "ASIC_StaticPwrMgtStatusChange",
-    "DAC_LoadDetection", "LVTMAEncoderControl", "LCD1OutputControl",
-    "DAC1EncoderControl", "DAC2EncoderControl", "DVOOutputControl",
-    "CV1OutputControl", "GetConditionalGoldenSetting", "TVEncoderControl",
-    "TMDSAEncoderControl", "LVDSEncoderControl", "TV1OutputControl",
-    "EnableScaler", "BlankCRTC", "EnableCRTC",
-    "GetPixelClock", "EnableVGA_Render", "EnableVGA_Access",
-    "SetCRTC_Timing", "SetCRTC_OverScan", "SetCRTC_Replication",
-    "SelectCRTC_Source", "EnableGraphSurfaces", "UpdateCRTC_DoubleBufferRegisters",
-    "LUT_AutoFill", "EnableHW_IconCursor", "GetMemoryClock",
-    "GetEngineClock", "SetCRTC_UsingDTDTiming", "ExternalEncoderControl",
-    "LVTMAOutputControl", "VRAM_BlockDetectionByStrap", "MemoryCleanUp",
-    "ReadEDIDFromHWAssistedI2C", "WriteOneByteToHWAssistedI2C", "ReadHWAssistedI2CStatus",
-    "SpeedFanControl", "PowerConnectorDetection", "MC_Synchronization",
-    "ComputeMemoryEnginePLL", "MemoryRefreshConversion", "VRAM_GetCurrentInfoBlock",
-    "DynamicMemorySettings", "MemoryTraining", "EnableSpreadSpectrumOnPPLL",
-    "TMDSAOutputControl", "SetVoltage", "DAC1OutputControl",
-    "DAC2OutputControl", "SetupHWAssistedI2CStatus", "ClockSource",
-    "MemoryDeviceInit", "EnableYUV", "DIG1EncoderControl",
-    "DIG2EncoderControl", "DIG1TransmitterControl", "DIG2TransmitterControl",
-    "ProcessAuxChannelTransaction", "DPEncoderService"
-} ;
-
-const char *index_data_table[] = {
-    "UtilityPipeLine", "MultimediaCapabilityInfo", "MultimediaConfigInfo",
-    "StandardVESA_Timing", "FirmwareInfo", "DAC_Info",
-    "LVDS_Info", "TMDS_Info", "AnalogTV_Info",
-    "SupportedDevicesInfo", "GPIO_I2C_Info", "VRAM_UsageByFirmware",
-    "GPIO_Pin_LUT", "VESA_ToInternalModeLUT", "ComponentVideoInfo",
-    "PowerPlayInfo", "CompassionateData", "SaveRestoreInfo",
-    "PPLL_SS_Info", "OemInfo", "XTMDS_Info",
-    "MclkSS_Info", "Object_Header", "IndirectIOAccess",
-    "MC_InitParameter", "ASIC_VDDC_Info", "ASIC_InternalSS_Info",
-    "TV_VideoMode", "VRAM_Info", "MemoryTrainingInfo",
-    "IntegratedSystemInfo", "ASIC_ProfilingInfo", "VoltageObjectInfo",
-    "PowerSourceInfo"
-} ;
-
-
-const char *index_ati_port[] = {
-    "INDIRECT_IO_MM", "INDIRECT_IO_PLL", "INDIRECT_IO_MC", "INDIRECT_IO_PCIE"
-} ;
-
-const char *index_work_reg[] = {
-    [WS_QUOTIENT]   = "WS_QUOT/LOW32", [WS_REMINDER]   = "WS_REMIND/HI32",
-    [WS_DATAPTR]    = "WS_DATAPTR",    [WS_SHIFT]      = "WS_SHIFT",
-    [WS_OR_MASK]    = "WS_OR_MASK",    [WS_AND_MASK]   = "WS_AND_MASK",
-    [WS_FB_WINDOW]  = "WS_FB_WIN",     [WS_ATTRIBUTES] = "WS_ATTR"
-} ;
-
-
-struct index_table_s {
-    const char  *name;
-    const char **tab;
-    int          len;
-} ;
-#define TABENTRY(x) { #x, (index_ ## x), sizeof (index_ ## x) / sizeof (const char **) }
-
-const struct index_table_s index_tables[] = {
-    [INDEX_COMMAND_TABLE] = TABENTRY (command_table),
-    [INDEX_DATA_TABLE] =    TABENTRY (data_table),
-    [INDEX_ATI_PORT] =      TABENTRY (ati_port),
-    [INDEX_WORK_REG] =      TABENTRY (work_reg)
-} ;
-
-
 bios_tables_t *get_pointers (uint8_t *data)
 {
     static bios_tables_t tabs;		/* FIXME: */
@@ -266,16 +183,6 @@ bios_tables_t *get_pointers (uint8_t *data)
 	->ListOfDataTables;
     
     return &tabs;
-}
-
-
-const char *get_index (int type, int val) {
-    if (type < 0 || val < 0 ||
-	type >= sizeof (index_tables) / sizeof (const struct index_table_s))
-	return NULL;
-    if (! index_tables[type].tab || val >= index_tables[type].len)
-	return NULL;
-    return index_tables[type].tab[val];
 }
 
 
@@ -487,6 +394,7 @@ void do_list (bios_tables_t *tabs)
 {
     int i;
     const char *ind;
+    int dumpers_size = data_dumpers_sizeof();
 
     fputs ("Command Tables:\n", stdout);
     for (i = 0; i < sizeof (ATOM_MASTER_LIST_OF_COMMAND_TABLES) / sizeof (uint16_t); i++) {
@@ -510,10 +418,8 @@ void do_list (bios_tables_t *tabs)
 	    fprintf (stdout, "  %04x:   -             ", i);
 	if ( (ind = get_index (INDEX_DATA_TABLE, i)) )
 	    fprintf (stdout, "  (%s)", ind);
-#ifdef USE_ATOMBIOS_RELATED_STUFF
-	if (i >= 0 && data_dumpers[i])	/* TODO: no size check */
+	if (i >= 0 && i < dumpers_size && data_dumpers[i])
 	    fprintf (stdout, "    (struct size %04x)", data_dumpers[i](NULL, 0));
-#endif
 	putc ('\n', stdout);
     }
     putc ('\n', stdout);
@@ -583,16 +489,15 @@ void do_dump (uint8_t *data, int start, int end)
     putc ('\n', stdout);
 }
 
-#ifdef USE_ATOMBIOS_RELATED_STUFF
 void do_data (uint8_t *data, int off, int nr)
 {
     int len;
-    if (nr >= 0 && data_dumpers[nr]) {	/* TODO: no size check */
+    int dumpers_size = data_dumpers_sizeof();
+    if (nr >= 0 && nr < dumpers_size && data_dumpers[nr]) {
 	len = data_dumpers[nr] (data+off, 1);
 	fprintf (stdout, "\n  Total data structure size:  %04x\n\n", len);
     }
 }
-#endif
 
 void do_diss (uint8_t *data, int off, int size)
 {
@@ -630,7 +535,7 @@ void do_test (uint8_t *data)
 	else
 	    fprintf (stdout, "%02x:  %s  (%s)\n", i, optable[i].name, addrnames[optable[i].desttype]);
     }
-    for (i = 0; i < sizeof (index_tables) / sizeof (struct index_table_s); i++) {
+    for (i = 0; i < INDEXTABLE_SIZEOF; i++) {
 	fprintf (stdout, "\nindex_table %s len %02x\n ", index_tables[i].name, index_tables[i].len);
 	for (j = 0; j < index_tables[i].len; j++)
 	    fprintf (stdout, " %02x=%s", j, index_tables[i].tab[j]);
@@ -644,6 +549,7 @@ void usage (char *argv[])
 {
     fprintf (stderr, "Usage:  %s [<opts>] <file> <cmd> [<cmd>...]\n"
 	     "Opts:   -o <vga_offset>      Specify offset of VGA bios in <file>\n"
+//	     "        -r <registers.xml>   Load registers specification file\n"
 	     "Cmds:   i                    Dump info on AtomBIOS\n"
 	     "        l                    Info + Table list\n"
 	     "        x <start> <len>      Hexdump\n"
@@ -668,10 +574,13 @@ int main (int argc, char *argv[])
     int            off, start, len;
 
     opterr = 0;
-    while ( (c = getopt (argc-1, argv+1, "o:")) != -1)
+    while ( (c = getopt (argc-1, argv+1, "o:r:")) != -1)
 	switch (c) {
 	case 'o':
 	    opt_off = strtol (optarg, NULL, 16);
+	    break;
+	case 'r':
+//	    load_registers (optarg);
 	    break;
 	default:
 	    usage (argv);
@@ -701,7 +610,6 @@ int main (int argc, char *argv[])
 	    break;
 	case 'l':
 	    tabs = get_pointers (data);
-	    do_info (tabs);
 	    do_list (tabs);
 	    break;
 	case 'x':
@@ -721,9 +629,7 @@ int main (int argc, char *argv[])
 //		do_dump (data + off, 0, 4);
 //		fputs ("Data:\n", stdout);
 		do_dump (data + off, 4, len);
-#ifdef USE_ATOMBIOS_RELATED_STUFF
 		do_data (data + off, 0, start);
-#endif
 	    }
 	    break;
 	case 'c':

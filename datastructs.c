@@ -13,20 +13,24 @@
 #include <stdint.h>
 
 #include "datastructs.h"
-
 #include "atombios_types.h"
-#include "atombios.h"
+
+#ifdef USE_ATOMBIOS_RELATED_STUFF
+#  include "atombios.h"
+#endif
 
 
-const char *space = "                                        ";
+const char *space = "                                                  ";
 #define IND(x)  (&space[50-2*((x)>25?25:(x))])
 #define FILL(x) (&space[((x)>50?50:(x))])
 
 
+#ifdef USE_ATOMBIOS_RELATED_STUFF
 #include "datastructs_gen.c"
-
+#endif
 
 int (*data_dumpers[]) (uint8_t *data, int indent) = {
+#ifdef USE_ATOMBIOS_RELATED_STUFF
     NULL, ATOM_MULTIMEDIA_CAPABILITY_INFO_dumper,
     ATOM_MULTIMEDIA_CONFIG_INFO_dumper, ATOM_STANDARD_VESA_TIMING_dumper,
     ATOM_FIRMWARE_INFO_dumper, ATOM_DAC_INFO_dumper, ATOM_LVDS_INFO_dumper,
@@ -44,4 +48,9 @@ int (*data_dumpers[]) (uint8_t *data, int indent) = {
     ATOM_VRAM_INFO_V3_dumper, ATOM_MEMORY_TRAINING_INFO_dumper,
     ATOM_INTEGRATED_SYSTEM_INFO_dumper, ATOM_ASIC_PROFILING_INFO_dumper,
     ATOM_VOLTAGE_OBJECT_INFO_dumper, ATOM_POWER_SOURCE_INFO_dumper
+#endif
 } ;
+
+int data_dumpers_sizeof (void) {
+    return sizeof (data_dumpers) / sizeof (void *);
+}

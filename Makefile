@@ -2,7 +2,7 @@ CFLAGS = -O0 -g3 -Wall
 
 all: atomdis
 
-atomdis: main.o datastructs.o
+atomdis: main.o datastructs.o indices.o
 	$(CC) -o atomdis $^
 
 clean: _always_

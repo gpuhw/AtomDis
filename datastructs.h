@@ -12,6 +12,11 @@
 #ifndef DATASTRUCTS_H_
 #define DATASTRUCTS_H_
 
+#define USE_ATOMBIOS_RELATED_STUFF
+
+
 extern int (*data_dumpers[]) (uint8_t *data, int indent);
+
+extern int data_dumpers_sizeof (void);
 
 #endif
