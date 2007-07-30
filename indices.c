@@ -104,7 +104,7 @@ void index_load_registers (const char *file)
     FILE *f;
     char  buf[512], kind[32], offset[32];
     char *c, *d, *e, *name = NULL, *namefree = NULL;
-    int   len, id, nr;
+    int   len, id, nr, size = 0;
 
     if (! (f = fopen (file, "r")) ) {
 	perror (file);
@@ -117,6 +117,9 @@ void index_load_registers (const char *file)
 		    free (namefree);
 		    name = namefree = strndup (d+7, e-d-7);
 		}
+	    size = 0;
+	    if ( (d = strstr (c, " size=\"")) )
+		size = strtol (d+7, NULL, 0);
 	}
 	if ( (c = strstr (buf, "<addr ")) ) {
 	    kind[0] = offset[0] = 0;
@@ -143,6 +146,14 @@ void index_load_registers (const char *file)
 	    else
 		continue;
 	    nr = strtol (offset, NULL, 0);
+	    if (size != 32)
+		continue;		/* TODO: 8-bit MM */
+	    if (id == INDEX_REG_MM) {
+		if (! (nr & 3))
+		    nr >>= 2;
+		else
+		    continue;
+	    }
 	    if (index_tables[id].len <= nr || ! index_tables[id].tab) {
 		len = (nr + 0x1f) & -0x20;
 		if (len <= 0)
@@ -155,9 +166,12 @@ void index_load_registers (const char *file)
 		index_tables[id].len = len;
 	    }
 	    if (index_tables[id].tab[nr]) {
-		fprintf (stderr, "Register %s already present: %s for offset %04x in table %s\n",
-			 name, index_tables[id].tab[nr], nr, index_tables[id].name);
+		fprintf (stderr, "Register clash: %04x = %s = %s in table %s\n",
+			 nr, name, index_tables[id].tab[nr], index_tables[id].name);
 	    } else {
+#if 0
+		fprintf (stderr, "   %s = %04x  [%02x]\n", name, nr, size);
+#endif
 		index_tables[id].tab[nr] = name;
 		namefree = NULL;
 	    }

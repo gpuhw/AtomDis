@@ -1,0 +1,4 @@
+*.o
+atomdis
+atombios.h
+datastructs_gen.c

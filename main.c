@@ -214,8 +214,6 @@ int sub_dest (uint8_t *d, char *out, int type, int align, int size, int index) {
     }
     if (type == D_WS && (ind = get_index (INDEX_WORK_REG, val)) )
 	out += sprintf (out, "%s", ind);
-    else if (type == D_REG && (ind = get_index (last_reg_index, val+last_reg_offset)) )
-	out += sprintf (out, "%04x=%s", val, ind);
     else if (r)
 	out += sprintf (out, addrtypes [type], val);
     switch (size) {
@@ -229,6 +227,8 @@ int sub_dest (uint8_t *d, char *out, int type, int align, int size, int index) {
 	out += sprintf (out, " [%s]", align_long[align]);
 	break;
     }
+    if (type == D_REG && (ind = get_index (last_reg_index, val+last_reg_offset)) )
+	out += sprintf (out, "  (%s)", ind);
     if (r && (ind = get_index (index, val)) )
 	out += sprintf (out, "  (%s)", ind);
     return r;
@@ -263,12 +263,12 @@ int sub_src (uint8_t *d, char *out, int type, int align, int size, int index) {
     } else if (type == D_WS && (ind = get_index (INDEX_WORK_REG, val)) ) {
 	out += sprintf (out, "%s", ind);
 	out += sprintf (out, " [%s]", align_source[align]);
-    } else if (type == D_REG && (ind = get_index (last_reg_index, val+last_reg_offset)) ) {
-	out += sprintf (out, "%04x=%s", val, ind);
     } else {
 	out += sprintf (out, addrtypes [type], val);
 	out += sprintf (out, " [%s]", align_source[align]);
     }
+    if (type == D_REG && (ind = get_index (last_reg_index, val+last_reg_offset)) )
+	out += sprintf (out, "  (%s)", ind);
     if ( (ind = get_index (index, val)) )
 	out += sprintf (out, "  (%s)", ind);
     return r;
