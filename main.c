@@ -129,7 +129,7 @@ const optab_t optable[256] = {
     { op_1x8,     "DELAY_MilliSec", D_hex8, 0, 0 },
     { op_1x8,     "DELAY_MicroSec", D_hex8, 0, 0 },
     { op_1x8,     "CALL_TABLE", D_hex8, 0, INDEX_COMMAND_TABLE },
-    { op_1x8,     "<!impl> REPEAT", D_hex8, 0, 0 },
+    { op_1x8,     "<deprecated> REPEAT", D_hex8, 0, 0 },
     { op_dest,    "CLEAR", D_REG, 0, 0 }, { op_dest, "CLEAR", D_PS, 0, 0 },
     { op_dest,    "CLEAR", D_WS, 0, 0 },  { op_dest, "CLEAR", D_FB, 0, 0 },
     { op_dest,    "CLEAR", D_PLL, 0, 0 }, { op_dest, "CLEAR", D_MC, 0, 0 },
@@ -140,8 +140,8 @@ const optab_t optable[256] = {
     { op_mask,    "MASK", D_PLL, 0, 0 }, { op_mask, "MASK", D_MC, 0, 0 },
     { op_1x8,     "POST_CARD", D_hex8, 0, 0 },
     { op_1x8,     "<!impl> BEEP", D_hex8, 0, 0 },
-    { op_0x,      "<!doc> SAVE_REG", D_null, 0, 0 },
-    { op_0x,      "<!doc> RESTORE_REG", D_null, 0, 0 },
+    { op_0x,      "<deprecated> SAVE_REG", D_null, 0, 0 },
+    { op_0x,      "<deprecated> RESTORE_REG", D_null, 0, 0 },
     { op_1x8,     "SET_DATA_BLOCK", D_hex8, 0, INDEX_DATA_TABLE },
     { op_destsrc, "XOR", D_REG, 0, 0 }, { op_destsrc, "XOR", D_PS, 0, 0 },
     { op_destsrc, "XOR", D_WS, 0, 0 },  { op_destsrc, "XOR", D_FB, 0, 0 },
@@ -526,7 +526,7 @@ void do_data (uint8_t *data, int off, int nr)
     }
 }
 
-void do_diss (uint8_t *data, int off, int size)
+void do_diss (uint8_t *data, int off, int size, const char *addrformat)
 {
     int j, len;
     uint8_t  *d = data + off;
@@ -539,7 +539,8 @@ void do_diss (uint8_t *data, int off, int size)
 	    sprintf (buf, "<unknown> %02x", *d);
 	    len = 1;
 	}
-	fprintf (stdout, "  %04x: ", d - data);
+	fputs ("  ", stdout);
+	fprintf (stdout, addrformat, d - data);
 	for (j = 0; j < len; j++) {
 	    if (j && ! (j & 31))
 		fprintf (stdout, "\n        ");
@@ -578,6 +579,7 @@ void usage (char *argv[])
     fprintf (stderr, "Usage:  %s [<opts>] <file> <cmd> [<cmd>...]\n"
 	     "Opts:   -o <vga_offset>      Specify offset of VGA bios in <file>\n"
 	     "        -r <registers.xml>   Load registers specification file\n"
+	     "        -a <addr_format>     Format for command addresses. Default: '%%04x: '\n"
 	     "Cmds:   i                    Dump info on AtomBIOS\n"
 	     "        l                    Info + Table list\n"
 	     "        x <start> <len>      Hexdump\n"
@@ -585,6 +587,7 @@ void usage (char *argv[])
 	     "        c <nr>               Command table disasm\n"
 	     "        C <start>            Table disasm (debug)\n"
 	     "        T                    Test (debug)\n"
+	     "        F                    Full dump (long output, sanitized)\n"
 	     "all values in hex\n",
 	     argv[0]);
     exit (1);
@@ -594,21 +597,24 @@ int main (int argc, char *argv[])
 {
     int            c;
     int            opt_off = 0;
+    const char    *opt_addrformat = "%04x: ";
     char         **arg;
     int            fdmem;
     uint8_t       *data;
     bios_tables_t *tabs;
-    const char    *ind;
-    int            off, start, len;
+    int            off, start, len, last;
 
     opterr = 0;
-    while ( (c = getopt (argc, argv, "o:r:")) != -1)
+    while ( (c = getopt (argc, argv, "o:r:a:")) != -1)
 	switch (c) {
 	case 'o':
 	    opt_off = strtol (optarg, NULL, 16);
 	    break;
 	case 'r':
 	    index_load_registers (optarg);
+	    break;
+	case 'a':
+	    opt_addrformat = optarg;
 	    break;
 	default:
 	    usage (argv);
@@ -655,9 +661,6 @@ int main (int argc, char *argv[])
 	    off   = tabs->MasterDataTables [start];
 	    len   = do_tableinfo (data, off, INDEX_DATA_TABLE, start);
 	    if (off) {
-//		fputs ("Header:\n", stdout);
-//		do_dump (data + off, 0, 4);
-//		fputs ("Data:\n", stdout);
 		do_dump (data + off, 4, len);
 		do_data (data + off, 0, start);
 	    }
@@ -667,19 +670,57 @@ int main (int argc, char *argv[])
 	    arg++;
 	    tabs  = get_pointers (data);
 	    off   = tabs->MasterCommandTables [start];
-	    ind   = get_index (INDEX_COMMAND_TABLE, start);
 	    len   = do_tableinfo (data, off, INDEX_COMMAND_TABLE, start);
 	    if (off)
-		do_diss (data + off, 6, len);
+		do_diss (data + off, 6, len, opt_addrformat);
 	    break;
 	case 'C':
 	    off   = strtol (arg[1], NULL, 16);
 	    arg++;
 	    len   = do_tableinfo (data, off, INDEX_COMMAND_TABLE, -1);
-	    do_diss (data + off, 6, len);
+	    do_diss (data + off, 6, len, opt_addrformat);
 	    break;
 	case 'T':
 	    do_test (data);
+	    break;
+	case 'F':
+	    tabs = get_pointers (data);
+	    do_info (tabs);
+	    do_list (tabs);
+	    fputs ("\n*** Command Tables:\n\n", stdout);
+	    last = 0;
+	    for (start = 0; start < sizeof (ATOM_MASTER_LIST_OF_COMMAND_TABLES)
+		 / sizeof (uint16_t); start++) {
+		off   = tabs->MasterCommandTables [start];
+		len   = do_tableinfo (data, off, INDEX_COMMAND_TABLE, start);
+		if (off) {
+		    if (off > last) {
+			do_diss (data + off, 6, len, opt_addrformat);
+			last = off - 0x8000;
+		    } else {
+			fputs ("  *** Wrap around of table offset - multi-segment output not supported yet\n\n", stdout);
+			last = 0x1ffff;
+		    }
+		}
+	    }
+	    fputs ("\n*** Data Tables:\n\n", stdout);
+	    last = 0;
+	    /* Data table #0 is reseverd (SET_DATA_BLOCK 0 == BIOS start */
+	    for (start = 1; start < sizeof (ATOM_MASTER_LIST_OF_DATA_TABLES)
+		 / sizeof (uint16_t); start++) {
+		off   = tabs->MasterDataTables [start];
+		len   = do_tableinfo (data, off, INDEX_DATA_TABLE, start);
+		if (off) {
+		    if (off > last) {
+			do_dump (data + off, 4, len);
+			do_data (data + off, 0, start);
+			last = off - 0x8000;
+		    } else {
+			fputs ("  *** Wrap around of table offset - multi-segment output not supported yet\n\n", stdout);
+			last = 0x1ffff;
+		    }
+		}
+	    }
 	    break;
 	default:
 	    usage (argv);
