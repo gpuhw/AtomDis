@@ -649,12 +649,16 @@ int main (int argc, char *argv[])
 	    do_list (tabs);
 	    break;
 	case 'x':
+	    if (!arg[1] || !arg[2])
+		usage (argv);
 	    start = strtol (arg[1], NULL, 16);
 	    len   = strtol (arg[2], NULL, 16);
 	    arg  += 2;
 	    do_dump (data, start, start+len);
 	    break;
 	case 'd':
+	    if (!arg[1])
+		usage (argv);
 	    start = strtol (arg[1], NULL, 16);
 	    arg++;
 	    tabs  = get_pointers (data);
@@ -666,6 +670,8 @@ int main (int argc, char *argv[])
 	    }
 	    break;
 	case 'c':
+	    if (!arg[1])
+		usage (argv);
 	    start = strtol (arg[1], NULL, 16);
 	    arg++;
 	    tabs  = get_pointers (data);
@@ -675,6 +681,8 @@ int main (int argc, char *argv[])
 		do_diss (data + off, 6, len, opt_addrformat);
 	    break;
 	case 'C':
+	    if (!arg[1])
+		usage (argv);
 	    off   = strtol (arg[1], NULL, 16);
 	    arg++;
 	    len   = do_tableinfo (data, off, INDEX_COMMAND_TABLE, -1);
