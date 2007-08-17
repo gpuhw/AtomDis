@@ -51,6 +51,8 @@ const char *addrtypes[] = {
     "PLL[%04x] ", "MC[%04x]  ",
     "%02x", "%04x", ""
 } ;
+int addrtypes_shift[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
 const char *addrtypes_im[] = { NULL, "%02x", "%04x", NULL, "%08x" };
 
 
@@ -64,6 +66,7 @@ typedef struct {
 
 static int last_reg_index  = INDEX_NONE;
 static int last_reg_offset = 0;
+static int opt_reg_addresses = 0;
 
 int op_0x      (uint8_t *, char *);
 int op_1x8     (uint8_t *, char *);
@@ -215,7 +218,7 @@ int sub_dest (uint8_t *d, char *out, int type, int align, int size, int index) {
     if (type == D_WS && (ind = get_index (INDEX_WORK_REG, val)) )
 	out += sprintf (out, "%s", ind);
     else if (r)
-	out += sprintf (out, addrtypes [type], val);
+	out += sprintf (out, addrtypes [type], val << addrtypes_shift[type]);
     switch (size) {
     case 1:
 	out += sprintf (out, " [%s]", align_byte[align]);
@@ -264,7 +267,7 @@ int sub_src (uint8_t *d, char *out, int type, int align, int size, int index) {
 	out += sprintf (out, "%s", ind);
 	out += sprintf (out, " [%s]", align_source[align]);
     } else {
-	out += sprintf (out, addrtypes [type], val);
+	out += sprintf (out, addrtypes [type], val << addrtypes_shift [type]);
 	out += sprintf (out, " [%s]", align_source[align]);
     }
     if (type == D_REG && (ind = get_index (last_reg_index, val+last_reg_offset)) )
@@ -283,7 +286,8 @@ int op_1x8 (uint8_t *d, char *out) {
     const optab_t *op = &optable[d[0]];
     const char    *ind;
     out += sprintf (out, "%-5s  ", op->name);
-    out += sprintf (out, addrtypes [op->desttype], d[1]);
+    out += sprintf (out, addrtypes [op->desttype],
+		    d[1] << addrtypes_shift [op->desttype]);
     if ( (ind = get_index (op->destindex, d[1])) )
 	out += sprintf (out, "  (%s)", ind);
     return 2;
@@ -292,7 +296,8 @@ int op_1x16 (uint8_t *d, char *out) {
     const optab_t *op = &optable[d[0]];
     const char    *ind;
     out += sprintf (out, "%-5s  ", op->name);
-    out += sprintf (out, addrtypes [op->desttype], *(uint16_t *) &d[1]);
+    out += sprintf (out, addrtypes [op->desttype],
+		    (*(uint16_t *) &d[1]) << addrtypes_shift [op->desttype]);
     if ( (ind = get_index (op->destindex, d[1])) )
 	out += sprintf (out, "  (%s)", ind);
     return 3;
@@ -388,11 +393,17 @@ int op_mask (uint8_t *d, char *out) {
 int op_setpt0 (uint8_t *d, char *out) {
     const optab_t *op = &optable[d[0]];
     last_reg_index = op->srcindex;
+    /* is never INDEX_REG_MM */
+    addrtypes_shift[D_REG] = 0;
     return op_0x (d, out);
 }
 int op_setpt1 (uint8_t *d, char *out) {
     const optab_t *op = &optable[d[0]];
     last_reg_index = op->srcindex + *(uint16_t *) &d[1];
+    if (last_reg_index == INDEX_REG_MM && opt_reg_addresses)
+	addrtypes_shift[D_REG] = 2;
+    else
+	addrtypes_shift[D_REG] = 0;
     return op_1x16 (d, out);
 }
 int op_setrb (uint8_t *d, char *out) {
@@ -580,6 +591,8 @@ void usage (char *argv[])
 	     "Opts:   -o <vga_offset>      Specify offset of VGA bios in <file>\n"
 	     "        -r <registers.xml>   Load registers specification file\n"
 	     "        -a <addr_format>     Format for command addresses. Default: '%%04x: '\n"
+	     "        -A                   Output addresses instead of offsets\n"
+	     "                             for MM register accesses\n"
 	     "Cmds:   i                    Dump info on AtomBIOS\n"
 	     "        l                    Info + Table list\n"
 	     "        x <start> <len>      Hexdump\n"
@@ -605,7 +618,7 @@ int main (int argc, char *argv[])
     int            off, start, len, last;
 
     opterr = 0;
-    while ( (c = getopt (argc, argv, "o:r:a:")) != -1)
+    while ( (c = getopt (argc, argv, "o:r:a:A")) != -1)
 	switch (c) {
 	case 'o':
 	    opt_off = strtol (optarg, NULL, 16);
@@ -615,6 +628,9 @@ int main (int argc, char *argv[])
 	    break;
 	case 'a':
 	    opt_addrformat = optarg;
+	    break;
+	case 'A':
+	    opt_reg_addresses = 1;
 	    break;
 	default:
 	    usage (argv);
@@ -637,6 +653,7 @@ int main (int argc, char *argv[])
     for (arg = &argv[optind+1]; *arg && **arg; arg++) {
 	last_reg_index  = INDEX_NONE;
 	last_reg_offset = 0;
+	addrtypes_shift[D_REG] = 0;
 	if (arg[0][1])
 	    usage (argv);
 	switch (arg[0][0]) {
