@@ -394,16 +394,16 @@ int op_setpt0 (uint8_t *d, char *out) {
     const optab_t *op = &optable[d[0]];
     last_reg_index = op->srcindex;
     /* is never INDEX_REG_MM */
-    addrtypes_shift[D_REG] = 0;
+    addrtypes_shift[D_REG]= addrtypes_shift[D_FB]= addrtypes_shift[D_ID]= 0;
     return op_0x (d, out);
 }
 int op_setpt1 (uint8_t *d, char *out) {
     const optab_t *op = &optable[d[0]];
     last_reg_index = op->srcindex + *(uint16_t *) &d[1];
     if (last_reg_index == INDEX_REG_MM && opt_reg_addresses)
-	addrtypes_shift[D_REG] = 2;
+	addrtypes_shift[D_REG]= addrtypes_shift[D_FB]= addrtypes_shift[D_ID]= 2;
     else
-	addrtypes_shift[D_REG] = 0;
+	addrtypes_shift[D_REG]= addrtypes_shift[D_FB]= addrtypes_shift[D_ID]= 0;
     return op_1x16 (d, out);
 }
 int op_setrb (uint8_t *d, char *out) {
@@ -592,7 +592,7 @@ void usage (char *argv[])
 	     "        -r <registers.xml>   Load registers specification file\n"
 	     "        -a <addr_format>     Format for command addresses. Default: '%%04x: '\n"
 	     "        -A                   Output addresses instead of offsets\n"
-	     "                             for MM register accesses\n"
+	     "                             for MM register, FB, and BIOS data accesses\n"
 	     "Cmds:   i                    Dump info on AtomBIOS\n"
 	     "        l                    Info + Table list\n"
 	     "        x <start> <len>      Hexdump\n"
@@ -653,7 +653,7 @@ int main (int argc, char *argv[])
     for (arg = &argv[optind+1]; *arg && **arg; arg++) {
 	last_reg_index  = INDEX_NONE;
 	last_reg_offset = 0;
-	addrtypes_shift[D_REG] = 0;
+	addrtypes_shift[D_REG]= addrtypes_shift[D_FB]= addrtypes_shift[D_ID]= 0;
 	if (arg[0][1])
 	    usage (argv);
 	switch (arg[0][0]) {
