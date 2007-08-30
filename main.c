@@ -315,7 +315,7 @@ int op_dest (uint8_t *d, char *out) {
     uint8_t *t    = d+1;
     int      attr = *t++;
     out += sprintf  (out, "%-5s  ", op->name);
-    t   += sub_dest (t, out, op->desttype, attr >> 6, size_align[(attr & 0x38)>>3], op->destindex);
+    t   += sub_src (t, out, op->desttype, (attr & 0x38) >> 3, size_align[(attr & 0x38)>>3], op->destindex);
     return t - d;
 }
 int op_destsrc (uint8_t *d, char *out) {
@@ -334,7 +334,7 @@ int op_shift (uint8_t *d, char *out) {
     uint8_t *t    = d+1;
     int      attr = *t++;
     out += sprintf  (out, "%-5s  ", op->name);
-    t   += sub_dest (t, out, op->desttype, attr >> 6, size_align[(attr & 0x38)>>3], op->destindex);
+    t   += sub_src (t, out, op->desttype, (attr & 0x38) >> 3, size_align[(attr & 0x38)>>3], op->destindex);
     out += strlen   (out);
     out += sprintf  (out, "  by  %02x", *t++);
     return t - d;
@@ -716,6 +716,8 @@ int main (int argc, char *argv[])
 	    last = 0;
 	    for (start = 0; start < sizeof (ATOM_MASTER_LIST_OF_COMMAND_TABLES)
 		 / sizeof (uint16_t); start++) {
+		last_reg_index  = INDEX_NONE;
+		last_reg_offset = 0;
 		off   = tabs->MasterCommandTables [start];
 		len   = do_tableinfo (data, off, INDEX_COMMAND_TABLE, start);
 		if (off) {
