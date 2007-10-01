@@ -432,7 +432,6 @@ void do_list (bios_tables_t *tabs)
 {
     int i;
     const char *ind;
-    int dumpers_size = data_dumpers_sizeof();
 
     fputs ("Command Tables:\n", stdout);
     for (i = 0; i < sizeof (ATOM_MASTER_LIST_OF_COMMAND_TABLES) / sizeof (uint16_t); i++) {
@@ -448,16 +447,22 @@ void do_list (bios_tables_t *tabs)
     }
     fprintf (stdout, "\nData Tables:\n");
     for (i = 0; i < sizeof (ATOM_MASTER_LIST_OF_DATA_TABLES) / sizeof (uint16_t); i++) {
-	if (tabs->MasterDataTables[i])
-	    fprintf (stdout, "  %04x:   %04x  Len %04x",
-		     i, tabs->MasterDataTables[i],
-		     * (uint16_t *) (tabs->base + tabs->MasterDataTables[i]));
-	else
-	    fprintf (stdout, "  %04x:   -             ", i);
+	data_dumper_t *dt   = NULL;
+	const char *comment = NULL;
+	if (tabs->MasterDataTables[i]) {
+	    uint8_t *data = tabs->base + tabs->MasterDataTables[i];
+	    int     frev = data[2];
+	    int     crev = data[3];
+	    fprintf (stdout, "  %04x:   %04x  Len %04x  Rev %02x:%02x",
+		     i, tabs->MasterDataTables[i], * (uint16_t *) data,
+		     frev, crev);
+	    dt = get_data_dumper (i, &frev, &crev, &comment);
+	} else
+	    fprintf (stdout, "  %04x:   -                        ", i);
 	if ( (ind = get_index (INDEX_DATA_TABLE, i)) )
 	    fprintf (stdout, "  (%s)", ind);
-	if (i >= 0 && i < dumpers_size && data_dumpers[i])
-	    fprintf (stdout, "    (struct size %04x)", data_dumpers[i](NULL, 0));
+	if (dt)
+	    fprintf (stdout, "    (struct size %04x)", (*dt) (NULL, NULL, 0));
 	putc ('\n', stdout);
     }
     putc ('\n', stdout);
@@ -530,11 +535,24 @@ void do_dump (uint8_t *data, int start, int end)
 void do_data (uint8_t *data, int off, int nr)
 {
     int len;
-    int dumpers_size = data_dumpers_sizeof();
-    if (nr >= 0 && nr < dumpers_size && data_dumpers[nr]) {
-	len = data_dumpers[nr] (data+off, 1);
-	fprintf (stdout, "\n  Total data structure size:  %04x\n\n", len);
-    }
+    const char *comment = NULL;
+    int frev = data[off+2];
+    int crev = data[off+3];
+    data_dumper_t *dt = get_data_dumper (nr, &frev, &crev, &comment);
+
+    if (! dt)
+	return;
+    if (frev == 0)
+	fprintf (stdout, "  NOTE: General revisionless dumper only.\n");
+    else if (frev != data[off+2] || crev != data[off+3])
+	fprintf (stdout, "  NOTE: Dumper revision differs.   "
+		 "Used:   Format Rev. %02x  Content Rev. %02x\n", frev, crev);
+    if (comment)
+	fprintf (stdout, "  NOTE: %s\n", comment);
+    if (frev == 0 || frev != data[off+2] || crev != data[off+3] || comment)
+	fputs ("\n", stdout);
+    len = (*dt) (data+off, data+off, 1);
+    fprintf (stdout, "\n  Total data structure size:  %04x\n\n", len);
 }
 
 void do_diss (uint8_t *data, int off, int size, const char *addrformat)
@@ -650,6 +668,8 @@ int main (int argc, char *argv[])
 	return 1;
     }
 
+    init_data_dumpers ();
+
     for (arg = &argv[optind+1]; *arg && **arg; arg++) {
 	last_reg_index  = INDEX_NONE;
 	last_reg_offset = 0;
@@ -728,6 +748,7 @@ int main (int argc, char *argv[])
 			fputs ("  *** Wrap around of table offset - multi-segment output not supported yet\n\n", stdout);
 			last = 0x1ffff;
 		    }
+		    fputs ("\n", stdout);
 		}
 	    }
 	    fputs ("\n*** Data Tables:\n\n", stdout);
@@ -746,6 +767,7 @@ int main (int argc, char *argv[])
 			fputs ("  *** Wrap around of table offset - multi-segment output not supported yet\n\n", stdout);
 			last = 0x1ffff;
 		    }
+		    fputs ("\n", stdout);
 		}
 	    }
 	    break;

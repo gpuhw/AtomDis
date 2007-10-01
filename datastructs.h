@@ -14,9 +14,11 @@
 
 #define USE_ATOMBIOS_RELATED_STUFF
 
+typedef int data_dumper_t (uint8_t *start, uint8_t *data, int indent);
 
-extern int (*data_dumpers[]) (uint8_t *data, int indent);
+extern void init_data_dumpers (void);
 
-extern int data_dumpers_sizeof (void);
+extern data_dumper_t *get_data_dumper (int ind, int *version, int *revision,
+				       const char **comment);
 
 #endif

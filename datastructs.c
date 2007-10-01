@@ -29,28 +29,86 @@ const char *space = "                                                  ";
 #include "datastructs_gen.c"
 #endif
 
-int (*data_dumpers[]) (uint8_t *data, int indent) = {
+typedef struct {
+    int id, vers, rev;
+    data_dumper_t *dumper;
+    const char *comment;
+} data_dumper_struct_t;
+
+data_dumper_struct_t data_dumpers[] = {
 #ifdef USE_ATOMBIOS_RELATED_STUFF
-    NULL, ATOM_MULTIMEDIA_CAPABILITY_INFO_dumper,
-    ATOM_MULTIMEDIA_CONFIG_INFO_dumper, ATOM_STANDARD_VESA_TIMING_dumper,
-    ATOM_FIRMWARE_INFO_dumper, ATOM_DAC_INFO_dumper, ATOM_LVDS_INFO_dumper,
-    ATOM_TMDS_INFO_dumper, ATOM_ANALOG_TV_INFO_dumper,
-    ATOM_SUPPORTED_DEVICES_INFO_dumper, ATOM_GPIO_I2C_INFO_dumper,
-    ATOM_VRAM_USAGE_BY_FIRMWARE_dumper, ATOM_GPIO_PIN_LUT_dumper,
-    ATOM_VESA_TO_INTENAL_MODE_LUT_dumper, // Typo
-    ATOM_COMPONENT_VIDEO_INFO_dumper,
-    ATOM_POWERPLAY_INFO_dumper, COMPASSIONATE_DATA_dumper,
-    NULL /*ATOM_SAVE_RESTORE_INFO_dumper*/, NULL /*ATOM_PPLL_SS_INFO_dumper*/,
-    ATOM_OEM_INFO_dumper, ATOM_XTMDS_INFO_dumper, NULL /*ATOM_MCLK_SS_INFO_dumper*/,
-    ATOM_OBJECT_HEADER_dumper, INDIRECT_IO_ACCESS_dumper,
-    NULL /*ATOM_MC_INIT_PARAMETER_dumper*/, NULL /*ATOM_ASIC_VDDC_INFO_dumper*/,
-    ATOM_ASIC_INTERNAL_SS_INFO_dumper, NULL /*ATOM_TV_VIDEO_MODE_dumper*/,
-    ATOM_VRAM_INFO_V3_dumper, ATOM_MEMORY_TRAINING_INFO_dumper,
-    ATOM_INTEGRATED_SYSTEM_INFO_dumper, ATOM_ASIC_PROFILING_INFO_dumper,
-    ATOM_VOLTAGE_OBJECT_INFO_dumper, ATOM_POWER_SOURCE_INFO_dumper
+    { 1,   0, 0,  ATOM_MULTIMEDIA_CAPABILITY_INFO_dumper, NULL },
+    { 2,   0, 0,  ATOM_MULTIMEDIA_CONFIG_INFO_dumper, NULL },
+    { 3,   0, 0,  ATOM_STANDARD_VESA_TIMING_dumper, NULL },
+    { 4,   1, 1,  ATOM_FIRMWARE_INFO_dumper, NULL },
+    { 4,   1, 2,  ATOM_FIRMWARE_INFO_V1_2_dumper, NULL },
+    { 4,   1, 3,  ATOM_FIRMWARE_INFO_V1_3_dumper, NULL },
+    { 4,   1, 4,  ATOM_FIRMWARE_INFO_V1_4_dumper, NULL },
+    { 5,   0, 0,  ATOM_DAC_INFO_dumper, NULL },
+    { 6,   1, 1,  ATOM_LVDS_INFO_dumper, NULL },
+    { 6,   1, 2,  ATOM_LVDS_INFO_V12_dumper, NULL },
+    { 7,   0, 0,  ATOM_TMDS_INFO_dumper, NULL },
+    { 8,   0, 0,  ATOM_ANALOG_TV_INFO_dumper, NULL },
+    { 9,   1, 0,  ATOM_SUPPORTED_DEVICES_INFO_dumper, NULL },
+    { 9,   2, 0,  ATOM_SUPPORTED_DEVICES_INFO_2_dumper, NULL },
+    { 9,   2, 1,  ATOM_SUPPORTED_DEVICES_INFO_2d1_dumper, NULL },
+    { 10,  0, 0,  ATOM_GPIO_I2C_INFO_dumper, NULL },
+    { 11,  0, 0,  ATOM_VRAM_USAGE_BY_FIRMWARE_dumper, NULL },
+    { 12,  0, 0,  ATOM_GPIO_PIN_LUT_dumper, NULL },
+    { 13,  0, 0,  ATOM_VESA_TO_INTENAL_MODE_LUT_dumper /* Typo */, NULL },
+    { 14,  1, 0,  ATOM_COMPONENT_VIDEO_INFO_dumper, NULL },
+    { 14,  2, 1,  ATOM_COMPONENT_VIDEO_INFO_V21_dumper, NULL },
+    { 15,  1, 0,  ATOM_POWERPLAY_INFO_dumper, NULL },
+    { 15,  2, 1,  ATOM_POWERPLAY_INFO_V2_dumper, NULL },
+    { 15,  2, 2,  ATOM_POWERPLAY_INFO_V3_dumper, NULL },
+    { 16,  0, 0,  COMPASSIONATE_DATA_dumper, NULL },
+    { 17,  0, 0,  NULL /*ATOM_SAVE_RESTORE_INFO_dumper*/, NULL },
+    { 18,  0, 0,  NULL /*ATOM_PPLL_SS_INFO_dumper*/, NULL },
+    { 19,  0, 0,  ATOM_OEM_INFO_dumper, NULL },
+    { 20,  0, 0,  ATOM_XTMDS_INFO_dumper, NULL },
+    { 21,  0, 0,  NULL /*ATOM_MCLK_SS_INFO_dumper*/, NULL },
+    { 22,  0, 0,  ATOM_OBJECT_HEADER_dumper, NULL },
+    { 23,  0, 0,  INDIRECT_IO_ACCESS_dumper, NULL },
+    { 24,  0, 0,  NULL /*ATOM_MC_INIT_PARAMETER_dumper*/, NULL },
+    { 25,  0, 0,  NULL /*ATOM_ASIC_VDDC_INFO_dumper*/, NULL },
+    { 26,  0, 0,  ATOM_ASIC_INTERNAL_SS_INFO_dumper, NULL },
+    { 27,  0, 0,  NULL /*ATOM_TV_VIDEO_MODE_dumper*/, NULL },
+    { 28,  1, 2,  ATOM_VRAM_INFO_V2_dumper, "Completely untested" },
+    { 28,  1, 3,  ATOM_VRAM_INFO_V3_dumper, "Apparently broken" },
+    { 29,  0, 0,  ATOM_MEMORY_TRAINING_INFO_dumper, NULL },
+    { 30,  0, 1,  ATOM_INTEGRATED_SYSTEM_INFO_dumper, NULL },
+    { 30,  0, 1,  ATOM_INTEGRATED_SYSTEM_INFO_V2_dumper, NULL },
+    { 31,  0, 0,  ATOM_ASIC_PROFILING_INFO_dumper, NULL },
+    { 32,  0, 0,  ATOM_VOLTAGE_OBJECT_INFO_dumper, NULL },
+    { 33,  0, 0,  ATOM_POWER_SOURCE_INFO_dumper, NULL },
+    { -1,  0, 0,  NULL }
 #endif
 } ;
 
-int data_dumpers_sizeof (void) {
-    return sizeof (data_dumpers) / sizeof (void *);
+void init_data_dumpers (void)
+{
 }
+
+data_dumper_t *get_data_dumper (int ind, int *version, int *revision,
+				const char **comment)
+{
+    data_dumper_struct_t *dt, *found = NULL;
+    for (dt = data_dumpers; dt->id >= 0 && dt->id <= ind; dt++) {
+	if (dt->id != ind)
+	    continue;
+	if (dt->vers != *version && dt->vers > 0)
+	    continue;
+	if (dt->rev > *revision)
+	    continue;
+	found     = dt;
+    }
+    if (found) {
+	*version  = found->vers;
+	*revision = found->rev;
+	if (comment)
+	    *comment = found->comment;
+	return found->dumper;
+    }
+    return NULL;
+}
+
