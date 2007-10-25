@@ -30,6 +30,7 @@
 
 
 #define MMAP_SIZE (1024*1024)
+#undef  USE_MMAP   /* too difficult to get big mapping (1MB) of small files) */
 
 
 typedef struct {
@@ -194,6 +195,27 @@ bios_tables_t *get_pointers (uint8_t *data)
 	->ListOfDataTables;
     
     return &tabs;
+}
+
+int get_table_offset(uint16_t *table, int idx) {
+    int i, last = 0, offset = 0;
+    static int wrapwarning = 0;
+
+    if (! table || ! table[idx])
+	return 0;
+
+    for (i = 0; i <= idx; i++) {
+	int off = table[i];
+	if (off) {
+	    if (off < last)
+		offset += 0x10000;
+	    last = off - 0x8000;
+	}
+    }
+
+    if (offset && ! wrapwarning++)
+	printf ("*** Wrap around of table offset - assuming offset\n");
+    return table[idx] + offset;
 }
 
 
@@ -435,10 +457,10 @@ void do_list (bios_tables_t *tabs)
 
     fputs ("Command Tables:\n", stdout);
     for (i = 0; i < sizeof (ATOM_MASTER_LIST_OF_COMMAND_TABLES) / sizeof (uint16_t); i++) {
-	if (tabs->MasterCommandTables[i])
+	int off = get_table_offset(tabs->MasterCommandTables, i);
+	if (off)
 	    fprintf (stdout, "  %04x:   %04x  Len %04x",
-		     i, tabs->MasterCommandTables[i],
-		     * (uint16_t *) (tabs->base + tabs->MasterCommandTables[i]));
+		     i, off, * (uint16_t *) (tabs->base+off));
 	else
 	    fprintf (stdout, "  %04x:   -             ", i);
 	if ( (ind = get_index (INDEX_COMMAND_TABLE, i)) )
@@ -449,13 +471,13 @@ void do_list (bios_tables_t *tabs)
     for (i = 0; i < sizeof (ATOM_MASTER_LIST_OF_DATA_TABLES) / sizeof (uint16_t); i++) {
 	data_dumper_t *dt   = NULL;
 	const char *comment = NULL;
-	if (tabs->MasterDataTables[i]) {
-	    uint8_t *data = tabs->base + tabs->MasterDataTables[i];
+	int off = get_table_offset(tabs->MasterDataTables, i);
+	if (off) {
+	    uint8_t *data= tabs->base + off;
 	    int     frev = data[2];
 	    int     crev = data[3];
 	    fprintf (stdout, "  %04x:   %04x  Len %04x  Rev %02x:%02x",
-		     i, tabs->MasterDataTables[i], * (uint16_t *) data,
-		     frev, crev);
+		     i, off, * (uint16_t *) data, frev, crev);
 	    dt = get_data_dumper (i, &frev, &crev, &comment);
 	} else
 	    fprintf (stdout, "  %04x:   -                        ", i);
@@ -470,25 +492,33 @@ void do_list (bios_tables_t *tabs)
 
 int do_tableinfo (uint8_t *data, int off, int type, int nr)
 {
-    int size = * (uint16_t *) (data+off);
-    int frev = *              (data+off+2);
-    int crev = *              (data+off+3);
-    const char *ind = get_index (type, nr);
+    int size, frev, crev;
+    const char *ind;
+
+    if (! data)
+	return 0;
+
+    size = * (uint16_t *) (data+off);
+    frev = *              (data+off+2);
+    crev = *              (data+off+3);
+    ind  = get_index (type, nr);
 
     fprintf (stdout, "%s  %08x", index_tables[type].name, off);
     if (nr >= 0)
 	fprintf (stdout, "  #%02x  (%s)", nr, ind ? ind:"<unknown>");
     fputs (":\n\n", stdout);
-    
+
     if (off)
+	fprintf (stdout, "  Size         %04x\n", size);
+    
+    if (off && size)
 	fprintf (stdout,
-		 "  Size         %04x\n"
 		 "  Format Rev.  %02x\n"
 		 "  Param Rev.   %02x\n"
 		 "  Content Rev. %02x\n",
-		 size, frev & 0x0f, frev >> 4, crev);
+		 frev & 0x0f, frev >> 4, crev);
 
-    if (type == INDEX_COMMAND_TABLE) {
+    if (type == INDEX_COMMAND_TABLE && size) {
 	int attr = * (uint16_t *) (data+off+4);
 	fprintf (stdout,
 		 "  Attributes:  Work space size        %02x longs\n"
@@ -662,13 +692,24 @@ int main (int argc, char *argv[])
 	return 1;
     }
     
+#if USE_MMAP 
     if ( (data = mmap (NULL, MMAP_SIZE, PROT_READ, MAP_PRIVATE, fdmem, opt_off))
 	 == (void *) -1) {
 	perror ("mmap()");
 	return 1;
     }
-
+#else
+    if (! (data = calloc (1, MMAP_SIZE)) ) {
+	perror ("calloc()");
+	return 1;
+    }
+    if ( (len = read (fdmem, data, MMAP_SIZE)) <= 0) {
+	perror ("read()");
+	return 1;
+    }
+    printf ("Read %x bytes of data from %s\n\n", len, argv[optind]);
     init_data_dumpers ();
+#endif
 
     for (arg = &argv[optind+1]; *arg && **arg; arg++) {
 	last_reg_index  = INDEX_NONE;
@@ -699,9 +740,9 @@ int main (int argc, char *argv[])
 	    start = strtol (arg[1], NULL, 16);
 	    arg++;
 	    tabs  = get_pointers (data);
-	    off   = tabs->MasterDataTables [start];
+	    off   = get_table_offset(tabs->MasterDataTables, start);
 	    len   = do_tableinfo (data, off, INDEX_DATA_TABLE, start);
-	    if (off) {
+	    if (off && len) {
 		do_dump (data + off, 4, len);
 		do_data (data + off, 0, start);
 	    }
@@ -712,9 +753,9 @@ int main (int argc, char *argv[])
 	    start = strtol (arg[1], NULL, 16);
 	    arg++;
 	    tabs  = get_pointers (data);
-	    off   = tabs->MasterCommandTables [start];
+	    off   = get_table_offset(tabs->MasterCommandTables, start);
 	    len   = do_tableinfo (data, off, INDEX_COMMAND_TABLE, start);
-	    if (off)
+	    if (off && len)
 		do_diss (data + off, 6, len, opt_addrformat);
 	    break;
 	case 'C':
@@ -738,16 +779,10 @@ int main (int argc, char *argv[])
 		 / sizeof (uint16_t); start++) {
 		last_reg_index  = INDEX_NONE;
 		last_reg_offset = 0;
-		off   = tabs->MasterCommandTables [start];
+		off   = get_table_offset(tabs->MasterCommandTables, start);
 		len   = do_tableinfo (data, off, INDEX_COMMAND_TABLE, start);
-		if (off) {
-		    if (off > last) {
-			do_diss (data + off, 6, len, opt_addrformat);
-			last = off - 0x8000;
-		    } else {
-			fputs ("  *** Wrap around of table offset - multi-segment output not supported yet\n\n", stdout);
-			last = 0x1ffff;
-		    }
+		if (off && len) {
+		    do_diss (data + off, 6, len, opt_addrformat);
 		    fputs ("\n", stdout);
 		}
 	    }
@@ -756,17 +791,11 @@ int main (int argc, char *argv[])
 	    /* Data table #0 is reseverd (SET_DATA_BLOCK 0 == BIOS start */
 	    for (start = 1; start < sizeof (ATOM_MASTER_LIST_OF_DATA_TABLES)
 		 / sizeof (uint16_t); start++) {
-		off   = tabs->MasterDataTables [start];
+		off   = get_table_offset(tabs->MasterDataTables, start);
 		len   = do_tableinfo (data, off, INDEX_DATA_TABLE, start);
-		if (off) {
-		    if (off > last) {
-			do_dump (data + off, 4, len);
-			do_data (data + off, 0, start);
-			last = off - 0x8000;
-		    } else {
-			fputs ("  *** Wrap around of table offset - multi-segment output not supported yet\n\n", stdout);
-			last = 0x1ffff;
-		    }
+		if (off && len) {
+		    do_dump (data + off, 4, len);
+		    do_data (data + off, 0, start);
 		    fputs ("\n", stdout);
 		}
 	    }
@@ -776,7 +805,9 @@ int main (int argc, char *argv[])
 	}
     }
 
+#if USE_MMAP
     munmap (data, MMAP_SIZE);
+#endif
     close  (fdmem);
     return 0;
 }
