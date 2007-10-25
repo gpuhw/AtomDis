@@ -1,4 +1,5 @@
 *.o
+*.d
 atomdis
 atombios.h
 datastructs_gen.c
