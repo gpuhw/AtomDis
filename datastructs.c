@@ -77,7 +77,7 @@ data_dumper_struct_t data_dumpers[] = {
     { 28,  1, 3,  ATOM_VRAM_INFO_V3_dumper, "Apparently broken" },
     { 29,  0, 0,  ATOM_MEMORY_TRAINING_INFO_dumper, NULL },
     { 30,  0, 1,  ATOM_INTEGRATED_SYSTEM_INFO_dumper, NULL },
-    { 30,  0, 1,  ATOM_INTEGRATED_SYSTEM_INFO_V2_dumper, NULL },
+    { 30,  0, 2,  ATOM_INTEGRATED_SYSTEM_INFO_V2_dumper, NULL },
     { 31,  0, 0,  ATOM_ASIC_PROFILING_INFO_dumper, NULL },
     { 32,  0, 0,  ATOM_VOLTAGE_OBJECT_INFO_dumper, NULL },
     { 33,  0, 0,  ATOM_POWER_SOURCE_INFO_dumper, NULL },
