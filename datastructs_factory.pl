@@ -18,6 +18,7 @@ while (<>) {
 	$t = $1;
 	$tv= $t eq "union" ? "(union) " : "";
 	$s = $2;
+	print STDERR "  $t $2\n";
 	print "int ${s}_dumper (uint8_t *start, uint8_t *data, int indent) {\n";
 	print "  $s *d = ($s *) data;\n";
 	print "  int i;\n";
@@ -28,6 +29,19 @@ while (<>) {
 	    s|\s*//.*||g;
 	    next if /^\s*\{\s*$/ || /^\s*$/;
 	    last if /\}/;
+	    while (/\[([^\]]+)\]/g) {
+	        $expr=$1;
+		if ($expr !~ /^\d+$/) {
+	            print STDERR "    Trying to evaluate $1...\n";
+		    $res = eval $expr;
+		    if (! defined $res) {
+		        print STDERR "      $@\n";
+		    } else {
+		        print STDERR "      -> $res\n";
+		        s/\[[^\]]+\]/[$res]/;
+		    }
+		}
+	    }
 	    if (/^\s*(\w+)\s+(\w+)(\s*(:\d+))?(\s*\[(\d+)\])?\s*;/) {
 		$e = $1;
 		$n = $2;
