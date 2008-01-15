@@ -48,7 +48,7 @@ enum {
 const char *addrnames[] = { "REG", "PS", "WS", "FB", "ID", "IM", "PLL", "MC", "dec", "hex8", "hex16", "null" };
 
 const char *addrtypes[] = {
-    "reg[%04x] ", "param[%02x] ", "work[%02x]  ", "fb[%02x]    ", "data[%04x]", NULL,
+    "reg[%04x] ", "param[%02x] ", "work[%02x]  ", "fb[%02x]    ", "data[%04x]", "%04x <D_ID unimplemented>",
     "PLL[%04x] ", "MC[%04x]  ",
     "%02x", "%04x", ""
 } ;
@@ -416,16 +416,16 @@ int op_setpt0 (uint8_t *d, char *out) {
     const optab_t *op = &optable[d[0]];
     last_reg_index = op->srcindex;
     /* is never INDEX_REG_MM */
-    addrtypes_shift[D_REG]= addrtypes_shift[D_FB]= addrtypes_shift[D_ID]= 0;
+    addrtypes_shift[D_REG] = 0;
     return op_0x (d, out);
 }
 int op_setpt1 (uint8_t *d, char *out) {
     const optab_t *op = &optable[d[0]];
     last_reg_index = op->srcindex + *(uint16_t *) &d[1];
     if (last_reg_index == INDEX_REG_MM && opt_reg_addresses)
-	addrtypes_shift[D_REG]= addrtypes_shift[D_FB]= addrtypes_shift[D_ID]= 2;
+	addrtypes_shift[D_REG] = 2;
     else
-	addrtypes_shift[D_REG]= addrtypes_shift[D_FB]= addrtypes_shift[D_ID]= 0;
+	addrtypes_shift[D_REG] = 0;
     return op_1x16 (d, out);
 }
 int op_setrb (uint8_t *d, char *out) {
@@ -714,7 +714,7 @@ int main (int argc, char *argv[])
     for (arg = &argv[optind+1]; *arg && **arg; arg++) {
 	last_reg_index  = INDEX_NONE;
 	last_reg_offset = 0;
-	addrtypes_shift[D_REG]= addrtypes_shift[D_FB]= addrtypes_shift[D_ID]= 0;
+	addrtypes_shift[D_REG] = 0;
 	if (arg[0][1])
 	    usage (argv);
 	switch (arg[0][0]) {
