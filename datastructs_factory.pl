@@ -83,7 +83,7 @@ while (<>) {
 			print "$loop_beg :\\n\"$loop_arg); ${e}_dumper (start, (uint8_t*) &$loop_dst, indent+1);$loop_end\n";
 		    }
 		}
-	    } else {	
+	    } else {
 		print "    printf (\"%s  <unparsable> line $l: $_\\n%sskipping...\\n\", IND(indent), IND(indent));\n";
 		last;
 	    }
