@@ -6,7 +6,7 @@
  * indices.c:
  * Symbol indices creation + access functions.
  *
- * License: to be determined
+ * License: GPL Version 2.0
  */
 
 #define _GNU_SOURCE

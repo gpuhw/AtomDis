@@ -8,7 +8,8 @@
 # datastructs_factory.pl:
 # Datastruct dumper generator (using atombios.h).
 #
-# License: to be determined
+# License: GPL Version 2.0
+# License of generated code: Same as license of input source (atombios.h)
 #
 
 

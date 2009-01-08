@@ -6,7 +6,7 @@
  * main.c:
  * Disassembler + frontend.
  *
- * License: to be determined
+ * License: GPL Version 2.0
  */
 
 // TODO: not endian safe!

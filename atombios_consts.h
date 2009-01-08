@@ -6,7 +6,7 @@
  * atombios_consts.h:
  * Constants not defined in atombios.h.
  *
- * License: to be determined
+ * License: GPL Version 2.0
  */
 
 #ifndef ATOMBIOS_CONSTS_H_

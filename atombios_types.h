@@ -5,7 +5,7 @@
  *
  * Types needed for atombios.h.
  *
- * License: to be determined
+ * License: GPL Version 2.0
  */
 
 #include <stdint.h>
