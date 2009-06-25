@@ -72,11 +72,11 @@ while (<>) {
 		    $loop_end = " }";
 		}
 		if ($e eq "UCHAR") {
-		    print "$loop_beg = %02x\\n\"$loop_arg, $loop_dst);$loop_end\n";
+		    print "$loop_beg = 0x%02x       (%d)\\n\"$loop_arg, $loop_dst, $loop_dst);$loop_end\n";
 		} elsif ($e eq "USHORT") {
-		    print "$loop_beg = %04x\\n\"$loop_arg, $loop_dst);$loop_end\n";
+		    print "$loop_beg = 0x%04x     (%d)\\n\"$loop_arg, $loop_dst, $loop_dst);$loop_end\n";
 		} elsif ($e eq "ULONG") {
-		    print "$loop_beg = %08x\\n\"$loop_arg, $loop_dst);$loop_end\n";
+		    print "$loop_beg = 0x%08x (%d)\\n\"$loop_arg, $loop_dst, $loop_dst);$loop_end\n";
 		} else {
 		    if ($b ne "") {
 			s/"/''/g;
