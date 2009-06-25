@@ -15,6 +15,7 @@
 
 while (<>) {
     $l++;
+    next if /^#/;
     if (/^\s*typedef\s+(struct|union)\s+_(\w+)/) {
 	$t = $1;
 	$tv= $t eq "union" ? "(union) " : "";
@@ -26,6 +27,7 @@ while (<>) {
 	print "  if (d) {\n";
 	while (<>) {
 	    $l++;
+	    next if /^#/;
 	    chomp;
 	    s|\s*//.*||g;
 	    next if /^\s*\{\s*$/ || /^\s*$/;
@@ -55,7 +57,7 @@ while (<>) {
 		    $loop_beg.= "       " if $b ne "";
 		    $loop_beg.= "$tv$e $n$b%s";
 		    $loop_arg = ", IND(indent)";
-		    $loop_arg.= ", ((uint8_t*)&$loop_dst)-start" if $b eq "";
+		    $loop_arg.= ", (int)(((uint8_t*)&$loop_dst)-start)" if $b eq "";
 		    $loop_arg.= ", FILL(".length($tv.$e.$n.$b).")";
 		    $loop_end = "";
 		} else {
@@ -65,7 +67,7 @@ while (<>) {
 		    $loop_beg.= "       " if $b ne "";
 		    $loop_beg.= "$tv$e $n$b%s [%d]";
 		    $loop_arg = ", IND(indent)";
-		    $loop_arg.= ", ((uint8_t*)&$loop_dst)-start" if $b eq "";
+		    $loop_arg.= ", (int)(((uint8_t*)&$loop_dst)-start)" if $b eq "";
 		    $loop_arg.= ", FILL(".(length($tv.$e.$n.$b)+4)."+(i>9)), i";
 		    $loop_end = " }";
 		}
@@ -77,6 +79,7 @@ while (<>) {
 		    print "$loop_beg = %08x\\n\"$loop_arg, $loop_dst);$loop_end\n";
 		} else {
 		    if ($b ne "") {
+			s/"/''/g;
 			print "    printf (\"%s  <unparsable> line $l: $_\\n%sskipping...\\n\", IND(indent), IND(indent));\n";
 			last;
 		    } else {
@@ -84,6 +87,7 @@ while (<>) {
 		    }
 		}
 	    } else {
+		s/"/''/g;
 		print "    printf (\"%s  <unparsable> line $l: $_\\n%sskipping...\\n\", IND(indent), IND(indent));\n";
 		last;
 	    }
