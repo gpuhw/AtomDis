@@ -75,6 +75,10 @@ while (<>) {
 		    print "$loop_beg = 0x%02x       (%d)\\n\"$loop_arg, $loop_dst, $loop_dst);$loop_end\n";
 		} elsif ($e eq "USHORT") {
 		    print "$loop_beg = 0x%04x     (%d)\\n\"$loop_arg, $loop_dst, $loop_dst);$loop_end\n";
+		} elsif ($e eq "U16") {
+		    print "$loop_beg = 0x%04x     (%d)\\n\"$loop_arg, ($loop_dst.u[0])|(($loop_dst.u[1])<<8), ($loop_dst.u[0])|(($loop_dst.u[1])<<8));$loop_end\n";
+		} elsif ($e eq "U24") {
+		    print "$loop_beg = 0x%06x   (%d)\\n\"$loop_arg, ($loop_dst.u[0])|(($loop_dst.u[1])<<8)|(($loop_dst.u[2])<<16), ($loop_dst.u[0])|(($loop_dst.u[1])<<8)|(($loop_dst.u[2])<<16));$loop_end\n";
 		} elsif ($e eq "ULONG") {
 		    print "$loop_beg = 0x%08x (%d)\\n\"$loop_arg, $loop_dst, $loop_dst);$loop_end\n";
 		} else {
