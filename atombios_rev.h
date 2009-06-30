@@ -1,15 +1,34 @@
 /*
  * Reverse engineered AtomBIOS entries.
+ * Plus addon information for dynamic data tables.
+ */
+
+/*
+ * Dynamic data tables:
+ * Modify table sizes and offset positions by replacing access code
+ * (e.g. &d->asPowerUnknownInfo[i]) by custom code.
+ * d is the current data structure, data as a char *, i is counter.
+ *
+ * #pragma count  ATOM_POWERPLAY_INFO_V4 asPowerIndexInfo   (d->NumPowerIndexEntries)
+ * #pragma offset ATOM_POWERPLAY_INFO_V4 asPowerIndexInfo   (data + d->OffsetPowerIndexEntries + i*d->SizeOfPowerIndexEntry)
+ * #pragma return ATOM_POWERPLAY_INFO_V4 -                  (d->OffsetPowerUnknownEntries + ATOM_MAX_NUMBEROF_POWERUNKNOWN_BLOCK_V4*d->SizeOfPowerUnknownEntry)
+ *
+ * Has to be issued *before* the offset is encountered. And outside structures.
  */
 
 typedef struct
 {
     unsigned char u[2];
 } U16;
+#define _U16(x) (((x).u[1]<<8)|(x).u[0])
+
 typedef struct
 {
     unsigned char u[3];
 } U24;
+#define _U24(x) (((x).u[2]<<16)|((x).u[1]<<8)|(x).u[0])
+
+#include "atombios.h"
 
 //ucTableFormatRevision=4
 //ucTableContentRevision=1
@@ -33,19 +52,19 @@ typedef struct  _ATOM_POWERMODE_INFO_V4
 
 typedef struct  _ATOM_POWERUNKNOWN_INFO_V4
 {
-  UCHAR     unknown0;
-  UCHAR     unknown1;
-  UCHAR     unknown2;
-  UCHAR     unknown3;
-  U16       unknown4;
-  U16       unknown6;
-  UCHAR     unknown8;
-  UCHAR     unknown9;
-  U16       unknown10;
+  UCHAR     unknown[12];
 }ATOM_POWERUNKNOWN_INFO_V4;
 
 #define ATOM_MAX_NUMBEROF_POWERMODE_BLOCK_V4 10
 #define ATOM_MAX_NUMBEROF_POWERUNKNOWN_BLOCK_V4 4
+
+#pragma count  ATOM_POWERPLAY_INFO_V4 asPowerIndexInfo    (d->NumPowerIndexEntries)
+#pragma offset ATOM_POWERPLAY_INFO_V4 asPowerIndexInfo   *(data + _U16(d->OffsetPowerIndexEntries) + i*d->SizeOfPowerIndexEntry)
+#pragma count  ATOM_POWERPLAY_INFO_V4 asPowerModeInfo     ((_U16(d->OffsetPowerUnknownEntries) - _U16(d->OffsetPowerModeEntries)) / d->SizeOfPowerModeEntry)
+#pragma offset ATOM_POWERPLAY_INFO_V4 asPowerModeInfo    *(data + _U16(d->OffsetPowerModeEntries)  + i*d->SizeOfPowerModeEntry)
+#pragma count  ATOM_POWERPLAY_INFO_V4 asPowerUnknownInfo  ((d->sHeader.usStructureSize - _U16(d->OffsetPowerUnknownEntries)) / d->SizeOfPowerUnknownEntry)
+#pragma offset ATOM_POWERPLAY_INFO_V4 asPowerUnknownInfo *(data + _U16(d->OffsetPowerUnknownEntries) + i*d->SizeOfPowerUnknownEntry)
+#pragma return ATOM_POWERPLAY_INFO_V4 -                   (_U16(d->OffsetPowerUnknownEntries) + ((d->sHeader.usStructureSize - _U16(d->OffsetPowerUnknownEntries)) / d->SizeOfPowerUnknownEntry)*d->SizeOfPowerUnknownEntry)
 
 typedef struct  _ATOM_POWERPLAY_INFO_V4
 {
@@ -68,3 +87,5 @@ typedef struct  _ATOM_POWERPLAY_INFO_V4
   ATOM_POWERMODE_INFO_V4 asPowerModeInfo[ATOM_MAX_NUMBEROF_POWERMODE_BLOCK_V4];
   ATOM_POWERUNKNOWN_INFO_V4 asPowerUnknownInfo[ATOM_MAX_NUMBEROF_POWERUNKNOWN_BLOCK_V4];
 }ATOM_POWERPLAY_INFO_V4;
+
+

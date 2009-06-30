@@ -16,7 +16,6 @@
 #include "atombios_types.h"
 
 #ifdef USE_ATOMBIOS_RELATED_STUFF
-#  include "atombios.h"
 #  include "atombios_rev.h"
 #endif
 
