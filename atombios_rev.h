@@ -64,7 +64,7 @@ typedef struct  _ATOM_POWERUNKNOWN_INFO_V4
 #pragma offset ATOM_POWERPLAY_INFO_V4 asPowerModeInfo    *(data + _U16(d->OffsetPowerModeEntries)  + i*d->SizeOfPowerModeEntry)
 #pragma count  ATOM_POWERPLAY_INFO_V4 asPowerUnknownInfo  ((d->sHeader.usStructureSize - _U16(d->OffsetPowerUnknownEntries)) / d->SizeOfPowerUnknownEntry)
 #pragma offset ATOM_POWERPLAY_INFO_V4 asPowerUnknownInfo *(data + _U16(d->OffsetPowerUnknownEntries) + i*d->SizeOfPowerUnknownEntry)
-#pragma return ATOM_POWERPLAY_INFO_V4 -                   (_U16(d->OffsetPowerUnknownEntries) + ((d->sHeader.usStructureSize - _U16(d->OffsetPowerUnknownEntries)) / d->SizeOfPowerUnknownEntry)*d->SizeOfPowerUnknownEntry)
+#pragma return ATOM_POWERPLAY_INFO_V4 -                   (d ? (_U16(d->OffsetPowerUnknownEntries) + ((d->sHeader.usStructureSize - _U16(d->OffsetPowerUnknownEntries)) / d->SizeOfPowerUnknownEntry)*d->SizeOfPowerUnknownEntry) : 0)
 
 typedef struct  _ATOM_POWERPLAY_INFO_V4
 {

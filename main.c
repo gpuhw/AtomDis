@@ -458,7 +458,7 @@ void do_info (bios_tables_t *tabs)
 
 void do_list (bios_tables_t *tabs)
 {
-    int i;
+    int i, len;
     const char *ind;
 
     fputs ("Command Tables:\n", stdout);
@@ -489,8 +489,8 @@ void do_list (bios_tables_t *tabs)
 	    fprintf (stdout, "  %04x:   -                        ", i);
 	if ( (ind = get_index (INDEX_DATA_TABLE, i)) )
 	    fprintf (stdout, "  (%s)", ind);
-	if (dt)
-	    fprintf (stdout, "    (struct size %04x)", (*dt) (NULL, NULL, 0));
+	if (dt && (len = (*dt) (NULL, NULL, 0)) )
+	    fprintf (stdout, "    (struct size %04x)", len);
 	putc ('\n', stdout);
     }
     putc ('\n', stdout);
