@@ -7,7 +7,8 @@
  * Dynamic data tables:
  * Modify table sizes and offset positions by replacing access code
  * (e.g. &d->asPowerUnknownInfo[i]) by custom code.
- * d is the current data structure, data as a char *, i is counter.
+ * d is the current data structure, data as a char *,
+ * start the main data structure as char *, i is counter.
  *
  * #pragma count  ATOM_POWERPLAY_INFO_V4 asPowerIndexInfo   (d->NumPowerIndexEntries)
  * #pragma offset ATOM_POWERPLAY_INFO_V4 asPowerIndexInfo   (data + d->OffsetPowerIndexEntries + i*d->SizeOfPowerIndexEntry)
@@ -33,6 +34,7 @@ typedef struct
 //ucTableFormatRevision=4
 //ucTableContentRevision=1
 
+#pragma count  ATOM_POWERINDEX_INFO_V4 Index (((ATOM_POWERPLAY_INFO_V4*)start)->SizeOfPowerIndexEntry-1)
 typedef struct _ATOM_POWERINDEX_INFO_V4
 {
   UCHAR     Type;
@@ -50,13 +52,11 @@ typedef struct  _ATOM_POWERMODE_INFO_V4
   U16       unknown14;
 }ATOM_POWERMODE_INFO_V4;
 
+#pragma count  ATOM_POWERUNKNOWN_INFO_V4 unknown (((ATOM_POWERPLAY_INFO_V4*)start)->SizeOfPowerUnknownEntry)
 typedef struct  _ATOM_POWERUNKNOWN_INFO_V4
 {
   UCHAR     unknown[12];
 }ATOM_POWERUNKNOWN_INFO_V4;
-
-#define ATOM_MAX_NUMBEROF_POWERMODE_BLOCK_V4 10
-#define ATOM_MAX_NUMBEROF_POWERUNKNOWN_BLOCK_V4 4
 
 #pragma count  ATOM_POWERPLAY_INFO_V4 asPowerIndexInfo    (d->NumPowerIndexEntries)
 #pragma offset ATOM_POWERPLAY_INFO_V4 asPowerIndexInfo   *(data + _U16(d->OffsetPowerIndexEntries) + i*d->SizeOfPowerIndexEntry)
@@ -84,8 +84,8 @@ typedef struct  _ATOM_POWERPLAY_INFO_V4
   U16      OffsetPowerUnknownEntries2;
   UCHAR    unknown37[3];		// RV770 only
   ATOM_POWERINDEX_INFO_V4 asPowerIndexInfo[4];
-  ATOM_POWERMODE_INFO_V4 asPowerModeInfo[ATOM_MAX_NUMBEROF_POWERMODE_BLOCK_V4];
-  ATOM_POWERUNKNOWN_INFO_V4 asPowerUnknownInfo[ATOM_MAX_NUMBEROF_POWERUNKNOWN_BLOCK_V4];
+  ATOM_POWERMODE_INFO_V4 asPowerModeInfo[10];
+  ATOM_POWERUNKNOWN_INFO_V4 asPowerUnknownInfo[4];
 }ATOM_POWERPLAY_INFO_V4;
 
 
