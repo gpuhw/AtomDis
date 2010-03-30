@@ -70,6 +70,7 @@ static int last_reg_offset = 0;
 static int opt_reg_addresses = 0;
 
 int op_ds      (uint8_t *, char *);
+int op_sdb      (uint8_t *, char *);
 int op_0x      (uint8_t *, char *);
 int op_1x8     (uint8_t *, char *);
 int op_1x16    (uint8_t *, char *);
@@ -147,7 +148,7 @@ const optab_t optable[256] = {
     { op_1x8,     "<!impl> BEEP", D_hex8, 0, 0 },
     { op_0x,      "<deprecated> SAVE_REG", D_null, 0, 0 },
     { op_0x,      "<deprecated> RESTORE_REG", D_null, 0, 0 },
-    { op_1x8,     "SET_DATA_BLOCK", D_hex8, 0, INDEX_DATA_TABLE },
+    { op_sdb,     "SET_DATA_BLOCK", D_hex8, 0, INDEX_DATA_TABLE },
     { op_destsrc, "XOR", D_REG, 0, 0 }, { op_destsrc, "XOR", D_PS, 0, 0 },
     { op_destsrc, "XOR", D_WS, 0, 0 },  { op_destsrc, "XOR", D_FB, 0, 0 },
     { op_destsrc, "XOR", D_PLL, 0, 0 }, { op_destsrc, "XOR", D_MC, 0, 0 },
@@ -311,6 +312,19 @@ int op_ds (uint8_t *d, char *out) {
     uint16_t size = *(uint16_t *) &d[1];
     out += sprintf (out, "%-5s  %d bytes", op->name, size);
     return size + 3;
+}
+
+int op_sdb (uint8_t *d, char *out) {
+    const optab_t *op = &optable[d[0]];
+    const char    *ind;
+    out += sprintf (out, "%-5s  ", op->name);
+    out += sprintf (out, addrtypes [op->desttype],
+		    d[1] << addrtypes_shift [op->desttype]);
+    if (d[1] == 0xff)
+	out += sprintf (out, "  (this table)");
+    else if ( (ind = get_index (op->destindex, d[1])) )
+	out += sprintf (out, "  (%s)", ind);
+    return 2;
 }
 
 int op_0x (uint8_t *d, char *out) {
