@@ -75,7 +75,8 @@ const char *index_work_reg[] = {
     [WS_QUOTIENT]   = "WS_QUOT/LOW32", [WS_REMINDER]   = "WS_REMIND/HI32",
     [WS_DATAPTR]    = "WS_DATAPTR",    [WS_SHIFT]      = "WS_SHIFT",
     [WS_OR_MASK]    = "WS_OR_MASK",    [WS_AND_MASK]   = "WS_AND_MASK",
-    [WS_FB_WINDOW]  = "WS_FB_WIN",     [WS_ATTRIBUTES] = "WS_ATTR"
+    [WS_FB_WINDOW]  = "WS_FB_WIN",     [WS_ATTRIBUTES] = "WS_ATTR",
+    [WS_REGPTR]     = "WS_REGPTR"
 } ;
 
 
