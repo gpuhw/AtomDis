@@ -69,6 +69,7 @@ static int last_reg_index  = INDEX_NONE;
 static int last_reg_offset = 0;
 static int opt_reg_addresses = 0;
 
+int op_ds      (uint8_t *, char *);
 int op_0x      (uint8_t *, char *);
 int op_1x8     (uint8_t *, char *);
 int op_1x16    (uint8_t *, char *);
@@ -163,7 +164,7 @@ const optab_t optable[256] = {
     { op_destsrc, "<!doc> SHR", D_PLL, 0, 0 },
     { op_destsrc, "<!doc> SHR", D_MC, 0, 0 },
     { op_0x,      "<!doc> DEBUG", D_null, 0, 0 },
-    { op_0x,      "<!doc> DS", D_null, 0, 0 },
+    { op_ds,      "CTB_DS", D_null, 0, 0 },
     [0x80] = { op_0x, "<!impl> Extended", D_null, 0, 0 },
     [0xff] = { op_0x, "<reserved>", D_null, 0, 0 }
 } ;
@@ -303,6 +304,13 @@ int sub_src (uint8_t *d, char *out, int type, int align, int size, int index) {
     if ( (ind = get_index (index, val)) )
 	out += sprintf (out, "  (%s)", ind);
     return r;
+}
+
+int op_ds (uint8_t *d, char *out) {
+    const optab_t *op = &optable[d[0]];
+    uint16_t size = *(uint16_t *) &d[1];
+    out += sprintf (out, "%-5s  %d bytes", op->name, size);
+    return size + 3;
 }
 
 int op_0x (uint8_t *d, char *out) {
