@@ -310,7 +310,8 @@ int sub_src (uint8_t *d, char *out, int type, int align, int size, int index) {
 int op_ds (uint8_t *d, char *out) {
     const optab_t *op = &optable[d[0]];
     uint16_t size = *(uint16_t *) &d[1];
-    out += sprintf (out, "%-5s  %d bytes", op->name, size);
+    /* Multiline, because even the hexdump typically needs lots of space */
+    out += sprintf (out, "\n                          %-5s  %d bytes", op->name, size);
     return size + 3;
 }
 
