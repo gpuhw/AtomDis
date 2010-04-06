@@ -88,8 +88,11 @@ static inline char *offset_ATOM_VRAM_INFO_V3_aVramInfo(ATOM_VRAM_INFO_V3 *d, int
 }
 static inline int count_ATOM_VRAM_INFO_V3_aVramInfo(ATOM_VRAM_INFO_V3 *d) {
     int i=0;
-    while (offset_ATOM_VRAM_INFO_V3_aVramInfo(d,i)-(char*)d < d->usMemAdjustTblOffset)
+    char *last = 0, *next;
+    while ( (next = offset_ATOM_VRAM_INFO_V3_aVramInfo(d,i)) - (char*)d < d->usMemAdjustTblOffset && next != last) {
+	last = next;
 	i++;
+    }
     return i;
 }
 static inline char *offset_ATOM_VOLTAGE_OBJECT_INFO_asVoltageObj(ATOM_VOLTAGE_OBJECT_INFO *d, int i) {
@@ -100,8 +103,11 @@ static inline char *offset_ATOM_VOLTAGE_OBJECT_INFO_asVoltageObj(ATOM_VOLTAGE_OB
 }
 static inline int count_ATOM_VOLTAGE_OBJECT_INFO_asVoltageObj(ATOM_VOLTAGE_OBJECT_INFO *d) {
     int i=0;
-    while (offset_ATOM_VOLTAGE_OBJECT_INFO_asVoltageObj(d,i)-(char*)d < d->sHeader.usStructureSize)
+    char *last=0, *next;
+    while ( (next = offset_ATOM_VOLTAGE_OBJECT_INFO_asVoltageObj(d,i)) - (char*)d < d->sHeader.usStructureSize && next != last) {
+	last = next;
 	i++;
+    }
     return i;
 }
 
