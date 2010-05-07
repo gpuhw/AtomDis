@@ -26,7 +26,7 @@
 #include "atombios_consts.h"
 
 //include "atombios_tables.h"
-#include "atombios.h"			/* FIXME: make it possible without */
+#include "atombios_rev.h"
 
 
 #define MMAP_SIZE (1024*1024)

@@ -3,6 +3,16 @@
  * Plus addon information for dynamic data tables.
  */
 
+#include <endian.h>
+
+#if __BYTE_ORDER == __LITTLE_ENDIAN
+#define ATOM_BIG_ENDIAN 0
+#define ATOM_LITTLE_ENDIAN 1
+#elif __BYTE_ORDER == __BIG_ENDIAN
+#define ATOM_BIG_ENDIAN 1
+#define ATOM_LITTLE_ENDIAN 0
+#endif
+
 /*
  * Dynamic data tables:
  * Modify table sizes and offset positions by replacing access code

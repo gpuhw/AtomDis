@@ -1,4 +1,4 @@
-CFLAGS = -O0 -g3 -Wall
+CFLAGS = -O0 -g3 -Wall -Wno-unknown-pragmas
 SRC    = main.c datastructs.c indices.c
 CC     = gcc
 
@@ -42,7 +42,7 @@ $(SRC:.c=.d): datastructs_gen.c
 
 # Special Flags + Dependencies
 
-datastructs.o: CFLAGS += -Wno-unused -Wno-unknown-pragmas
+datastructs.o: CFLAGS += -Wno-unused
 
 _always_:
 	@true
