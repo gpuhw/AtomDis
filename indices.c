@@ -57,12 +57,13 @@ const char *index_data_table[] = {
     "LVDS_Info", "TMDS_Info", "AnalogTV_Info",
     "SupportedDevicesInfo", "GPIO_I2C_Info", "VRAM_UsageByFirmware",
     "GPIO_Pin_LUT", "VESA_ToInternalModeLUT", "ComponentVideoInfo",
-    "PowerPlayInfo", "CompassionateData", "SaveRestoreInfo",
-    "PPLL_SS_Info", "OemInfo", "XTMDS_Info",
-    "MclkSS_Info", "Object_Header", "IndirectIOAccess",
-    "MC_InitParameter", "ASIC_VDDC_Info", "ASIC_InternalSS_Info",
-    "TV_VideoMode", "VRAM_Info", "MemoryTrainingInfo",
-    "IntegratedSystemInfo", "ASIC_ProfilingInfo", "VoltageObjectInfo",
+    "PowerPlayInfo", "CompassionateData", "SaveRestoreInfo/DispDevicePriorityInfo",
+    "PPLL_SS_Info/SS_Info", "OemInfo", "XTMDS_Info",
+    "MclkSS_Info", "Object_Info/Object_Header", "IndirectIOAccess",
+    "MC_InitParameter/AdjustARB_SEQ", "ASIC_VDDC_Info", "ASIC_InternalSS_Info/ASIC_MVDDC_Info",
+    "TV_VideoMode/DispOutInfo", "VRAM_Info", "MemoryTrainingInfo/ASIC_MVDDQ_Info",
+    "IntegratedSystemInfo", "ASIC_ProfilingInfo/ASIC_VDDCI_Info",
+    "VoltageObjectInfo/VRAM_GPIO_DetectionInfo",
     "PowerSourceInfo"
 } ;
 
