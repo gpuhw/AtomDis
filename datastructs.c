@@ -44,6 +44,7 @@ data_dumper_struct_t data_dumpers[] = {
     { 4,   1, 2,  ATOM_FIRMWARE_INFO_V1_2_dumper, NULL },
     { 4,   1, 3,  ATOM_FIRMWARE_INFO_V1_3_dumper, NULL },
     { 4,   1, 4,  ATOM_FIRMWARE_INFO_V1_4_dumper, NULL },
+    { 4,   2, 1,  ATOM_FIRMWARE_INFO_V2_1_dumper, NULL },
     { 5,   0, 0,  ATOM_DAC_INFO_dumper, NULL },
     { 6,   1, 1,  ATOM_LVDS_INFO_dumper, NULL },
     { 6,   1, 2,  ATOM_LVDS_INFO_V12_dumper, NULL },
