@@ -78,6 +78,7 @@ data_dumper_struct_t data_dumpers[] = {
     { 27,  0, 0,  NULL /*ATOM_TV_VIDEO_MODE_dumper*/, NULL },
     { 28,  1, 2,  ATOM_VRAM_INFO_V2_dumper, "Completely untested" },
     { 28,  1, 3,  ATOM_VRAM_INFO_V3_dumper, "Only partially supported" },
+    { 28,  1, 4,  ATOM_VRAM_INFO_V4_dumper, "Only partially supported" },
     { 29,  0, 0,  ATOM_MEMORY_TRAINING_INFO_dumper, "No dynamic dumper yet" },
     { 30,  1, 1,  ATOM_INTEGRATED_SYSTEM_INFO_dumper, NULL },
     { 30,  1, 2,  ATOM_INTEGRATED_SYSTEM_INFO_V2_dumper, NULL },
