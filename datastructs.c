@@ -70,7 +70,7 @@ data_dumper_struct_t data_dumpers[] = {
     { 15,  5, 1,  ATOM_PPLIB_POWERPLAYTABLE_dumper, NULL },
     { 16,  0, 0,  COMPASSIONATE_DATA_dumper, NULL },
     { 17,  0, 0,  NULL /*ATOM_SAVE_RESTORE_INFO_dumper*/, NULL },
-    { 18,  0, 0,  NULL /*ATOM_PPLL_SS_INFO_dumper*/, NULL },
+    { 18,  0, 0,  ATOM_SPREAD_SPECTRUM_INFO_dumper, NULL },
     { 19,  0, 0,  ATOM_OEM_INFO_dumper, NULL },
     { 20,  0, 0,  ATOM_XTMDS_INFO_dumper, NULL },
     { 21,  0, 0,  NULL /*ATOM_MCLK_SS_INFO_dumper*/, NULL },
