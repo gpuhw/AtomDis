@@ -429,7 +429,7 @@ int op_mask (uint8_t *d, char *out) {
     t   += sub_dest (t, out, op->desttype, attr >> 6, size_align[(attr & 0x38)>>3], op->destindex);
     out += strlen   (out);
     out += sprintf  (out, "  &  ");
-    t   += sub_src  (t, out, attr & 0x07, (attr & 0x38) >> 3, size_align[(attr & 0x38)>>3], 0);
+    t   += sub_src  (t, out, D_IM, (attr & 0x38) >> 3, size_align[(attr & 0x38)>>3], 0);
     out += strlen   (out);
     out += sprintf  (out, "  |  ");
     t   += sub_src  (t, out, attr & 0x07, (attr & 0x38) >> 3, size_align[(attr & 0x38)>>3], 0);
