@@ -106,6 +106,8 @@ while (<>) {
 		    print "$loop_beg = 0x%06x   (%d)\\n\"$loop_arg, _U24($loop_dst), _U24($loop_dst));$loop_end\n";
 		} elsif ($e eq "ULONG") {
 		    print "$loop_beg = 0x%08x (%d)\\n\"$loop_arg, $loop_dst, $loop_dst);$loop_end\n";
+		} elsif ($e eq "char") {
+		    print "$loop_beg = 0x%02x '%c'   (%d)\\n\"$loop_arg, $loop_dst, $loop_dst, $loop_dst);$loop_end\n";
 		} else {
 		    if ($b ne "") {
 			s/"/''/g;
