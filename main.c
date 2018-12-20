@@ -208,6 +208,10 @@ const optab_t optable[256] = {
     [0x78] = { op_destsrc, "SHR", D_MC, 0, 0 },
     [0x79] = { op_0x,      "<!doc> DEBUG", D_null, 0, 0 },
     [0x7a] = { op_ds,      "CTB_DS", D_null, 0, 0 },
+    [0x7b] = { op_destsrc, "MUL32", D_PS, 0, 0 },
+    [0x7c] = { op_destsrc, "MUL32", D_WS, 0, 0 },
+    [0x7d] = { op_destsrc, "MUL32", D_PS, 0, 0 },
+    [0x7e] = { op_destsrc, "MUL32", D_WS, 0, 0 },
     [0x80] = { op_0x,      "<!impl> Extended", D_null, 0, 0 },
     [0xff] = { op_0x,      "<reserved>", D_null, 0, 0 }
 } ;

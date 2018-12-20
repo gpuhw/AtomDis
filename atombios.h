@@ -9278,6 +9278,3 @@ typedef struct {
 
 
 #endif /* _ATOMBIOS_H */
-
-#include "pptable.h"
-
